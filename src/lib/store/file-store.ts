@@ -43,7 +43,8 @@ interface StoreSnapshot {
 function usesRedisStore(): boolean {
   const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
   const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN);
-  return Boolean(process.env.VERCEL && hasUrl && hasToken);
+  const cloudStoreEnabled = Boolean(process.env.VERCEL || process.env.USE_CLOUD_STORE === "1");
+  return cloudStoreEnabled && hasUrl && hasToken;
 }
 
 function usesBlobStore(): boolean {
@@ -301,6 +302,10 @@ export function mergeRawDeal(previous: Deal | undefined, raw: RawDeal): RawDeal 
   };
 }
 
+export function crawlRunStatus(results: Array<Pick<CrawlSourceResult, "status">>): CrawlRun["status"] {
+  return results.some((result) => result.status === "success") ? "completed" : "failed";
+}
+
 export async function readStore(): Promise<CrawlStore> {
   await mutationQueue;
   const { store } = await readUnsafe();
@@ -361,6 +366,7 @@ export async function saveCrawlResults(
       .sort((a, b) => calculateDisplayRankingScore(b, now) - calculateDisplayRankingScore(a, now));
 
     const finishedAt = new Date().toISOString();
+    const status = crawlRunStatus(results);
     const run: CrawlRun = {
       id: context?.id ?? `crawl_${Date.now().toString(36)}`,
       startedAt,
@@ -375,10 +381,11 @@ export async function saveCrawlResults(
         message: result.message
       })),
       totalCollected: rawDeals.length,
-      status: "completed",
+      status,
       trigger: context?.trigger,
       requestId: context?.requestId,
-      durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime())
+      durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
+      error: status === "failed" ? "all_sources_unavailable" : undefined
     };
     store.runs = [run, ...store.runs.filter((item) => item.id !== run.id)].slice(0, 100);
     if (store.crawlLease?.id === run.id) delete store.crawlLease;

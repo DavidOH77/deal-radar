@@ -16,6 +16,20 @@ export async function GET(request: Request) {
 
   try {
     const run = await runCrawl(undefined, { trigger: "cron", requestId: id });
+    if (run.status === "failed") {
+      logEvent("error", "hourly_crawl_failed", {
+        requestId: id,
+        runId: run.id,
+        error: run.error
+      });
+      return NextResponse.json({
+        ok: false,
+        error: run.error ?? "no_sources_available",
+        requestId: id,
+        runId: run.id,
+        sources: run.sources.map(({ source, status, count }) => ({ source, status, count }))
+      }, { status: 502, headers });
+    }
     logEvent("info", "hourly_crawl_completed", {
       requestId: id,
       runId: run.id,

@@ -84,7 +84,7 @@ AFFILIATE_11ST_TEMPLATE=https://affiliate.example/deeplink?media={id}&url={url}
 
 ## 1시간 수집
 
-무료 Vercel Hobby 플랜은 자체 Cron을 하루 한 번만 실행할 수 있습니다. `vercel.json`의 Cron은 매일 03:17 KST에 백업 수집을 실행하고, `.github/workflows/hourly-crawl.yml`이 매시 7분에 운영 `GET /api/cron/crawl`을 호출합니다. 이 경로는 `Authorization: Bearer $CRON_SECRET`이 일치할 때만 수집을 실행합니다. Vercel과 GitHub Actions에는 같은 `CRON_SECRET`을 설정하고, GitHub의 `CRON_URL`에는 운영 URL의 `/api/cron/crawl` 주소를 넣으세요.
+무료 Vercel Hobby 플랜은 자체 Cron을 하루 한 번만 실행할 수 있습니다. `vercel.json`의 Cron은 매일 03:17 KST에 백업 수집을 실행하고, Mac `launchd` 서비스가 매시간 실제 커뮤니티 수집을 수행해 운영 Redis를 갱신합니다. Vercel 데이터센터 IP는 현재 공개 커뮤니티 4곳에서 차단되므로 Mac 수집기가 운영 데이터 갱신의 기본 실행 주체입니다. `.github/workflows/hourly-crawl.yml`은 매시 운영 헬스체크를 실행합니다.
 
 운영 데이터는 Vercel Marketplace에서 연결한 Upstash Redis에 저장합니다. `KV_REST_API_URL`, `KV_REST_API_TOKEN`이 있으면 Redis를 우선 사용하고, Redis가 없는 기존 배포에서는 비공개 Vercel Blob을 대체 저장소로 사용합니다. 로컬에서는 클라우드 환경변수와 무관하게 기존 `data/crawl-store.json`을 사용합니다.
 
@@ -102,7 +102,7 @@ CRAWL_INTERVAL_MINUTES=60
 HEALTH_MAX_CRAWL_AGE_MINUTES=150
 ```
 
-로컬 `npm run dev`에서는 서버가 1분마다 마지막 전체 수집 시각을 확인하고, `CRAWL_INTERVAL_MINUTES`가 지나면 자동 수집합니다. 랭킹 화면도 1분마다 `/api/deals`를 다시 읽고 탭으로 돌아오는 즉시 동기화합니다. 운영 환경에서는 GitHub Actions가 시간별 실행 주체이고, Vercel Cron이 하루 한 번 백업 실행을 담당합니다. 페이지/API의 만기 확인도 누락된 크론을 보완합니다.
+로컬 `npm run dev`에서는 서버가 1분마다 마지막 전체 수집 시각을 확인하고, `CRAWL_INTERVAL_MINUTES`가 지나면 자동 수집합니다. 랭킹 화면도 1분마다 `/api/deals`를 다시 읽고 탭으로 돌아오는 즉시 동기화합니다. 운영 환경에서는 Mac 수집기가 시간별 실행 주체이고, Vercel Cron은 공식 API나 승인 피드가 연결됐을 때 하루 한 번 백업 실행을 담당합니다. 페이지/API의 만기 확인도 누락된 크론을 보완합니다.
 
 ## macOS 백그라운드 서버
 
@@ -113,7 +113,7 @@ npm run build
 ./scripts/install-macos-service.sh
 ```
 
-서비스는 `127.0.0.1:3000`에서 실행되고 `ENABLE_LOCAL_SCHEDULER=1`로 시간당 수집을 유지합니다. AC 전원 연결 중에는 `caffeinate -s`가 시스템 잠자기를 막습니다. 화면 잠금은 가능하며 배터리 사용 중에는 macOS 전원 설정에 따라 잠들 수 있습니다.
+서비스는 `127.0.0.1:3000`에서 실행되고 `ENABLE_LOCAL_SCHEDULER=1`로 시간당 수집을 유지합니다. `USE_CLOUD_STORE=1`이 설정되어 수집 결과는 배포 사이트와 같은 Redis에 저장됩니다. AC 전원 연결 중에는 `caffeinate -s`가 시스템 잠자기를 막습니다. 화면 잠금은 가능하며 배터리 사용 중에는 macOS 전원 설정에 따라 잠들 수 있습니다.
 
 ```bash
 launchctl print gui/$(id -u)/com.dealradar.server

@@ -25,6 +25,8 @@
     <string>3000</string>
     <key>ENABLE_LOCAL_SCHEDULER</key>
     <string>1</string>
+    <key>USE_CLOUD_STORE</key>
+    <string>1</string>
   </dict>
 
   <key>RunAtLoad</key>

@@ -1,4 +1,4 @@
-name: Hourly hot-deal crawl
+name: Hourly production health check
 
 on:
   schedule:
@@ -6,21 +6,17 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hourly-hot-deal-crawl
+  group: hourly-production-health
   cancel-in-progress: false
 
 jobs:
-  crawl:
+  health:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Trigger production crawler
+      - name: Verify production backend
         env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          CRON_URL: ${{ secrets.CRON_URL }}
+          HEALTH_URL: ${{ secrets.HEALTH_URL }}
         run: |
-          test -n "$CRON_SECRET"
-          test -n "$CRON_URL"
-          curl --fail-with-body --retry 2 --retry-all-errors --max-time 70 \
-            --header "Authorization: Bearer $CRON_SECRET" \
-            "$CRON_URL"
+          test -n "$HEALTH_URL"
+          curl --fail-with-body --retry 2 --retry-all-errors --max-time 30 "$HEALTH_URL"

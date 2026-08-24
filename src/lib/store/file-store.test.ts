@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CrawlStore, Deal, RawDeal } from "@/lib/deals/types";
-import { clickCount, isCrawlLeaseActive, mergeRawDeal } from "./file-store";
+import { clickCount, crawlRunStatus, isCrawlLeaseActive, mergeRawDeal } from "./file-store";
 
 const raw: RawDeal = {
   source: "fmkorea",
@@ -59,5 +59,10 @@ describe("mergeRawDeal", () => {
       expiresAt: "2026-08-23T00:08:00.000Z",
       trigger: "cron"
     }, Date.parse("2026-08-23T00:09:00.000Z"))).toBe(false);
+  });
+
+  it("marks a run failed when every source is unavailable", () => {
+    expect(crawlRunStatus([{ status: "error" }, { status: "needs_credentials" }])).toBe("failed");
+    expect(crawlRunStatus([{ status: "error" }, { status: "success" }])).toBe("completed");
   });
 });
