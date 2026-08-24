@@ -86,7 +86,7 @@ AFFILIATE_11ST_TEMPLATE=https://affiliate.example/deeplink?media={id}&url={url}
 
 무료 Vercel Hobby 플랜은 자체 Cron을 하루 한 번만 실행할 수 있습니다. `vercel.json`의 Cron은 매일 03:17 KST에 백업 수집을 실행하고, `.github/workflows/hourly-crawl.yml`이 매시 7분에 운영 `GET /api/cron/crawl`을 호출합니다. 이 경로는 `Authorization: Bearer $CRON_SECRET`이 일치할 때만 수집을 실행합니다. Vercel과 GitHub Actions에는 같은 `CRON_SECRET`을 설정하고, GitHub의 `CRON_URL`에는 운영 URL의 `/api/cron/crawl` 주소를 넣으세요.
 
-운영 데이터는 비공개 Vercel Blob의 `deal-radar/crawl-store.json`에 저장합니다. 프로젝트 Storage에서 Private Blob을 연결해 `BLOB_READ_WRITE_TOKEN`을 주입해야 합니다. 로컬에서는 이 값이 없을 때 기존 `data/crawl-store.json`을 사용합니다.
+운영 데이터는 Vercel Marketplace에서 연결한 Upstash Redis에 저장합니다. `KV_REST_API_URL`, `KV_REST_API_TOKEN`이 있으면 Redis를 우선 사용하고, Redis가 없는 기존 배포에서는 비공개 Vercel Blob을 대체 저장소로 사용합니다. 로컬에서는 클라우드 환경변수와 무관하게 기존 `data/crawl-store.json`을 사용합니다.
 
 수집 시작 시 저장소에 8분짜리 lease를 먼저 기록하므로 서로 다른 서버리스 인스턴스가 같은 크론을 동시에 받아도 한 번만 실행됩니다. 실행이 중단되어 lease가 만료되면 다음 크론이 기존 실행을 `failed`로 기록하고 수집을 재개합니다. `CRAWL_LEASE_TTL_MS`는 Vercel 함수의 최대 실행 시간보다 길게 설정해야 합니다.
 
@@ -102,7 +102,7 @@ CRAWL_INTERVAL_MINUTES=60
 HEALTH_MAX_CRAWL_AGE_MINUTES=150
 ```
 
-로컬 `npm run dev`에서는 서버가 1분마다 마지막 전체 수집 시각을 확인하고, `CRAWL_INTERVAL_MINUTES`가 지나면 자동 수집합니다. 랭킹 화면도 1분마다 `/api/deals`를 다시 읽고 탭으로 돌아오는 즉시 동기화합니다. 운영 환경에서는 Vercel Cron이 기본 실행 주체이며, 페이지/API의 만기 확인이 누락된 크론을 보완합니다.
+로컬 `npm run dev`에서는 서버가 1분마다 마지막 전체 수집 시각을 확인하고, `CRAWL_INTERVAL_MINUTES`가 지나면 자동 수집합니다. 랭킹 화면도 1분마다 `/api/deals`를 다시 읽고 탭으로 돌아오는 즉시 동기화합니다. 운영 환경에서는 GitHub Actions가 시간별 실행 주체이고, Vercel Cron이 하루 한 번 백업 실행을 담당합니다. 페이지/API의 만기 확인도 누락된 크론을 보완합니다.
 
 ## macOS 백그라운드 서버
 
@@ -128,11 +128,11 @@ Vercel Hobby 플랜은 하루 1회보다 잦은 크론을 허용하지 않으므
 - `GET /api/deals`: 저장된 딜과 최신 소스 상태
 - `GET /api/deals?refresh=1`: 개발 환경에서 즉시 수집 후 반환
 - `POST /api/crawl`: 수집 실행, 운영 환경은 `Authorization: Bearer $CRON_SECRET` 필요
-- `GET /api/cron/crawl`: 매시 정각 실행되는 보호된 전체 수집 경로
+- `GET /api/cron/crawl`: 인증된 스케줄러가 호출하는 전체 수집 경로
 - `GET /api/sources`: 최근 20회 수집 결과와 활성 lease, 운영 환경은 인증 필요
 - `GET /api/health`: 저장소, 마지막 정상 수집 시각, 소스와 데이터 상태를 반환하는 공개 헬스체크
 - `GET /go/:dealId`: 클릭 기록 후 제휴/원본 URL로 이동
 
-모든 API 응답에는 장애 추적용 `x-request-id`가 포함됩니다. `/api/health`는 마지막 정상 수집이 기본 150분을 넘거나 Vercel Blob이 설정되지 않은 운영 배포에서 `503`을 반환합니다.
+모든 API 응답에는 장애 추적용 `x-request-id`가 포함됩니다. `/api/health`는 마지막 정상 수집이 기본 150분을 넘거나 영속 저장소가 설정되지 않은 운영 배포에서 `503`을 반환합니다.
 
-`/go`는 판매처 이동을 먼저 응답하고 클릭 기록은 응답 이후 처리합니다. 클릭 데이터는 날짜·딜·제휴 여부 단위로 집계해 Blob 크기를 제한합니다. Blob 저장은 시간 단위 수집과 초기 트래픽에 맞춘 구성이며, 사용자 계정·외부 알림·상세 분석이 붙는 시점에는 같은 저장소 인터페이스를 Postgres와 작업 큐로 교체하는 편이 안전합니다.
+`/go`는 판매처 이동을 먼저 응답하고 클릭 기록은 응답 이후 처리합니다. 클릭 데이터는 날짜·딜·제휴 여부 단위로 집계하며, Redis 분산 뮤텍스로 크롤 결과와 클릭 기록의 동시 갱신을 직렬화합니다. 사용자 계정·외부 알림·상세 분석이 붙는 시점에는 같은 저장소 인터페이스를 Postgres와 작업 큐로 확장하는 편이 안전합니다.

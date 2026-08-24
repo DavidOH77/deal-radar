@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
+import { Redis } from "@upstash/redis";
 import type {
   ClickAggregate,
   ClickEvent,
@@ -20,6 +22,9 @@ import { calculateDealTrend } from "@/lib/deals/trend";
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "crawl-store.json");
 const BLOB_STORE_PATH = "deal-radar/crawl-store.json";
+const REDIS_STORE_KEY = "deal-radar:crawl-store";
+const REDIS_MUTEX_KEY = "deal-radar:crawl-store:mutex";
+const REDIS_MUTEX_TTL_MS = 15_000;
 const EMPTY_STORE: CrawlStore = { deals: [], priceSnapshots: [], runs: [], clicks: [], clickAggregates: [] };
 const DEAL_RETENTION_MS = 21 * 24 * 60 * 60 * 1000;
 const SNAPSHOT_RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
@@ -28,24 +33,36 @@ const PUBLISHED_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const DEFAULT_CRAWL_LEASE_TTL_MS = 8 * 60 * 1000;
 
 let mutationQueue: Promise<unknown> = Promise.resolve();
+let redisClient: Redis | undefined;
 
 interface StoreSnapshot {
   store: CrawlStore;
   etag?: string;
 }
 
+function usesRedisStore(): boolean {
+  const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
+  const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN);
+  return Boolean(process.env.VERCEL && hasUrl && hasToken);
+}
+
 function usesBlobStore(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
-export function storageBackend(): "vercel_blob" | "local_file" | "misconfigured" {
+function redis(): Redis {
+  redisClient ??= Redis.fromEnv({ readYourWrites: true });
+  return redisClient;
+}
+
+export function storageBackend(): "upstash_redis" | "vercel_blob" | "local_file" | "misconfigured" {
+  if (usesRedisStore()) return "upstash_redis";
   if (usesBlobStore()) return "vercel_blob";
   if (process.env.VERCEL) return "misconfigured";
   return "local_file";
 }
 
-function parseStore(contents: string): CrawlStore {
-  const parsed = JSON.parse(contents) as Partial<CrawlStore>;
+function normalizeStore(parsed: Partial<CrawlStore>): CrawlStore {
   return {
     deals: parsed.deals ?? [],
     priceSnapshots: parsed.priceSnapshots ?? [],
@@ -56,6 +73,16 @@ function parseStore(contents: string): CrawlStore {
   };
 }
 
+function parseStore(contents: string): CrawlStore {
+  return normalizeStore(JSON.parse(contents) as Partial<CrawlStore>);
+}
+
+function parseRedisStore(value: unknown): CrawlStore {
+  if (typeof value === "string") return parseStore(value);
+  if (value && typeof value === "object") return normalizeStore(value as Partial<CrawlStore>);
+  return structuredClone(EMPTY_STORE);
+}
+
 function isDisplayableDeal(deal: Pick<RawDeal, "title" | "sourceUrl" | "publishedAt">, now = Date.now()): boolean {
   const title = normalizeTitle(deal.title);
   if (!title || title === "list_adsense" || deal.sourceUrl.includes("/adlink_")) return false;
@@ -63,6 +90,10 @@ function isDisplayableDeal(deal: Pick<RawDeal, "title" | "sourceUrl" | "publishe
 }
 
 async function readUnsafe(): Promise<StoreSnapshot> {
+  if (usesRedisStore()) {
+    return { store: parseRedisStore(await redis().get(REDIS_STORE_KEY)) };
+  }
+
   if (usesBlobStore()) {
     const result = await get(BLOB_STORE_PATH, { access: "private", useCache: false });
     if (!result) return { store: structuredClone(EMPTY_STORE) };
@@ -83,6 +114,11 @@ async function readUnsafe(): Promise<StoreSnapshot> {
 }
 
 async function writeUnsafe(store: CrawlStore, etag?: string): Promise<void> {
+  if (usesRedisStore()) {
+    await redis().set(REDIS_STORE_KEY, store);
+    return;
+  }
+
   const contents = JSON.stringify(store, null, 2);
   if (usesBlobStore()) {
     await put(BLOB_STORE_PATH, contents, {
@@ -103,8 +139,43 @@ async function writeUnsafe(store: CrawlStore, etag?: string): Promise<void> {
   await rename(tempPath, STORE_PATH);
 }
 
+async function waitForRedisMutex(attempt: number): Promise<void> {
+  const delay = Math.min(50 + attempt * 15, 250);
+  await new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+async function withRedisMutex<T>(operation: () => Promise<T>): Promise<T> {
+  const client = redis();
+  const token = randomUUID();
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const acquired = await client.set(REDIS_MUTEX_KEY, token, { nx: true, px: REDIS_MUTEX_TTL_MS });
+    if (acquired === "OK") {
+      try {
+        return await operation();
+      } finally {
+        await client.eval(
+          "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+          [REDIS_MUTEX_KEY],
+          [token]
+        ).catch(() => undefined);
+      }
+    }
+    await waitForRedisMutex(attempt);
+  }
+  throw new Error("Timed out waiting for the crawl store mutex.");
+}
+
 function mutateStore<T>(mutator: (store: CrawlStore) => T | Promise<T>): Promise<T> {
   const mutation = mutationQueue.then(async () => {
+    if (usesRedisStore()) {
+      return withRedisMutex(async () => {
+        const { store } = await readUnsafe();
+        const result = await mutator(store);
+        await writeUnsafe(store);
+        return result;
+      });
+    }
+
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const { store, etag } = await readUnsafe();
       const result = await mutator(store);
