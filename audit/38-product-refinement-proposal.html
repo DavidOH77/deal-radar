@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>딜레이더 제품화 리디자인 제안</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&icon_names=add,check,chevron_right,close,database,expand_more,favorite,filter_list,open_in_new,search,settings,sort,visibility&display=block">
+  <style>
+    @import url("../node_modules/pretendard/dist/web/variable/pretendardvariable.css");
+    :root {
+      --canvas: #f7f7f8;
+      --surface: #ffffff;
+      --surface-subtle: #f1f1f3;
+      --surface-hover: #fafafa;
+      --text: #18181b;
+      --text-2: #71717a;
+      --text-3: #a1a1aa;
+      --border: rgb(24 24 27 / 8%);
+      --border-strong: rgb(24 24 27 / 14%);
+      --accent: #635bff;
+      --success: #1f8f6a;
+      --danger: #d14343;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --radius-control: 10px;
+      --radius-media: 12px;
+      --radius-surface: 16px;
+      --radius-pill: 999px;
+      --motion: 160ms ease;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--canvas); }
+    body { margin: 0; color: var(--text); background: var(--canvas); font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif; font-weight: 500; letter-spacing: 0; }
+    button, input, select { font: inherit; letter-spacing: 0; }
+    button, summary, a { -webkit-tap-highlight-color: transparent; }
+    button { color: inherit; cursor: pointer; }
+    a { color: inherit; text-decoration: none; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .material-symbols-rounded { font-family: "Material Symbols Rounded"; font-size: 19px; font-weight: normal; line-height: 1; font-variation-settings: "FILL" 0, "wght" 430, "GRAD" 0, "opsz" 24; }
+    .filled { font-variation-settings: "FILL" 1, "wght" 430, "GRAD" 0, "opsz" 24; }
+    .app-header { position: sticky; top: 0; z-index: 20; height: 56px; background: rgba(255,255,255,.98); border-bottom: 1px solid var(--border); }
+    .header-inner { width: min(100%, 1200px); height: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; }
+    .brand { display: inline-flex; align-items: center; gap: 8px; }
+    .brand img { width: 21px; height: 21px; object-fit: contain; }
+    .brand strong { font-size: 18px; font-weight: 700; }
+    .primary-nav { height: 100%; margin-left: auto; display: flex; align-items: stretch; gap: 12px; }
+    .nav-link { position: relative; min-width: 104px; height: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: var(--text-2); font-size: 14px; font-weight: 500; }
+    .nav-link::after { content: ""; position: absolute; right: 14px; bottom: 0; left: 14px; height: 2px; background: transparent; }
+    .nav-link.active { color: var(--accent); }
+    .nav-link.active::after { background: var(--accent); }
+    .manage-link { width: 40px; height: 40px; margin: auto 0 auto 12px; display: grid; place-items: center; color: var(--text-2); border: 0; border-radius: 50%; background: transparent; }
+    .manage-link:hover, .manage-link.active { color: var(--text); background: var(--surface-subtle); }
+    .shell { width: min(100%, 1200px); min-height: calc(100vh - 56px); margin: 0 auto; padding: 0 24px 64px; background: transparent; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-heading { min-height: 76px; display: flex; align-items: center; gap: 24px; }
+    .page-heading h1 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; }
+    .page-heading p { margin: 4px 0 0; color: var(--text-2); font-size: 13px; }
+    .freshness { margin-left: auto; color: var(--text-2); font-size: 13px; }
+    .freshness strong { color: var(--text); font-weight: 600; }
+    .filter-bar { position: sticky; top: 56px; z-index: 15; min-height: 68px; display: flex; align-items: center; gap: 8px; padding: 12px; background: rgba(255,255,255,.98); border: 1px solid var(--border); border-radius: var(--radius-surface); }
+    .search-field { min-width: 240px; max-width: 420px; height: 44px; flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--text-2); background: var(--surface-subtle); border-radius: var(--radius-control); }
+    .search-field input { min-width: 0; width: 100%; height: 100%; color: var(--text); background: transparent; border: 0; outline: 0; font-size: 14px; }
+    .toggle { height: 32px; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px; color: var(--accent); background: rgb(99 91 255 / 8%); border: 0; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .toggle-mark { width: 30px; height: 18px; padding: 2px; display: flex; justify-content: flex-end; background: var(--accent); border-radius: 9px; }
+    .toggle-mark::after { content: ""; width: 14px; height: 14px; background: white; border-radius: 50%; }
+    .source-tabs { height: 32px; display: flex; align-items: center; gap: 4px; }
+    .source-tab, .menu-summary { height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 11px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .source-tab.active { color: var(--accent); background: rgb(99 91 255 / 8%); border-color: rgb(99 91 255 / 18%); font-weight: 600; }
+    .sources-menu { position: relative; }
+    .sources-menu summary { list-style: none; cursor: pointer; }
+    .sources-menu summary::-webkit-details-marker { display: none; }
+    .menu-panel { position: absolute; top: 44px; right: 0; width: 184px; padding: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-surface); box-shadow: 0 8px 24px rgb(24 24 27 / 8%); }
+    .menu-panel label { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 8px; color: var(--text-2); font-size: 13px; }
+    .menu-panel label:hover { color: var(--text); background: var(--surface-subtle); }
+    .select-control { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .select-control select { height: 100%; color: var(--text); background: transparent; border: 0; outline: 0; font-size: 13px; font-weight: 500; }
+    .deal-list { margin-top: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-surface); }
+    .deal-row { position: relative; min-width: 0; display: grid; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--motion); }
+    .deal-row:hover { background: var(--surface-hover); }
+    .deal-row:active { background: var(--surface-subtle); }
+    .row-link { position: absolute; z-index: 1; inset: 0; }
+    .row-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+    .deal-featured { min-height: 172px; grid-template-columns: 32px 120px minmax(0,1fr) 48px; gap: 20px; padding: 16px 20px; }
+    .deal-standard { min-height: 88px; grid-template-columns: 32px 64px minmax(0,1fr) 128px 40px; gap: 16px; padding: 12px 20px; }
+    .rank { color: var(--text-2); font-size: 15px; font-weight: 600; font-variant-numeric: proportional-nums lining-nums; font-feature-settings: "pnum" 1, "tnum" 0; text-align: center; }
+    .deal-image { width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--surface-subtle); border-radius: var(--radius-media); }
+    .deal-image img { width: 100%; height: 100%; object-fit: contain; background: white; }
+    .deal-copy { min-width: 0; }
+    .deal-meta { display: flex; align-items: center; gap: 7px; color: var(--text-2); font-size: 12px; white-space: nowrap; }
+    .seller { color: var(--text); font-weight: 600; }
+    .deal-meta span + span::before { content: ""; width: 2px; height: 2px; display: inline-block; margin-right: 7px; vertical-align: middle; background: var(--text-3); border-radius: 50%; }
+    .deal-copy h2 { margin: 7px 0 0; overflow: hidden; font-size: 16px; line-height: 24px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .deal-standard .deal-copy h2 { font-size: 15px; line-height: 22px; }
+    .deal-price { margin-top: 8px; display: flex; align-items: baseline; gap: 8px; }
+    .deal-price strong { font-family: inherit; font-size: 16px; line-height: 24px; font-weight: 600; font-variant-numeric: proportional-nums lining-nums; font-feature-settings: "pnum" 1, "tnum" 0; letter-spacing: 0; }
+    .deal-price span { color: var(--text-2); font-size: 12px; }
+    .deal-reason { margin-top: 8px; display: flex; align-items: center; gap: 6px; color: var(--accent); font-size: 12px; font-weight: 600; }
+    .deal-reason.neutral { color: var(--text-2); font-weight: 500; }
+    .reaction { margin-top: 6px; color: var(--text-2); font-size: 11px; }
+    .row-price { justify-self: end; display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+    .row-price strong { font-family: inherit; font-size: 15px; line-height: 22px; font-weight: 600; font-variant-numeric: proportional-nums lining-nums; font-feature-settings: "pnum" 1, "tnum" 0; letter-spacing: 0; }
+    .row-price span { color: var(--text-2); font-size: 11px; }
+    .actions { position: relative; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+    .icon-button { width: 40px; height: 40px; display: grid; place-items: center; color: var(--text-2); background: transparent; border: 0; border-radius: 50%; }
+    .icon-button:hover { color: var(--text); background: var(--surface-subtle); }
+    .primary-action { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; color: white; background: var(--text); border: 0; border-radius: var(--radius-control); font-size: 13px; font-weight: 600; }
+    .content-section { padding: 24px 0 56px; }
+    .section-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+    .section-heading h2 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; }
+    .section-heading p { margin: 4px 0 0; color: var(--text-2); font-size: 12px; }
+    .empty-state { min-height: 280px; display: grid; place-items: center; align-content: center; gap: 12px; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-surface); text-align: center; }
+    .empty-state .material-symbols-rounded { color: var(--text-2); font-size: 28px; }
+    .empty-state h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .empty-state p { margin: 0; color: var(--text-2); font-size: 13px; }
+    .example-chips { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+    .example-chip { height: 32px; padding: 0 11px; color: var(--text-2); background: white; border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 12px; }
+    .example-chip:hover { color: var(--text); background: var(--surface-subtle); }
+    .builder { max-width: 720px; margin: 24px auto 0; display: none; grid-template-columns: minmax(0,1fr) 220px 104px; gap: 8px; }
+    .builder.open { display: grid; }
+    .field { min-width: 0; }
+    .field label { display: block; margin: 0 0 7px 2px; color: var(--text-2); font-size: 12px; font-weight: 500; }
+    .input-shell { height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 13px; background: var(--surface-subtle); border-radius: var(--radius-control); }
+    .input-shell input { min-width: 0; width: 100%; height: 100%; color: var(--text); background: transparent; border: 0; outline: 0; font-size: 14px; }
+    .input-shell span { color: var(--text-2); font-size: 13px; }
+    .builder .primary-action { height: 40px; align-self: end; }
+    .saved-empty { min-height: 160px; display: grid; place-items: center; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-surface); font-size: 13px; }
+    .status-summary { min-height: 64px; display: flex; align-items: center; gap: 28px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .status-count { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 13px; }
+    .status-count::before { content: ""; width: 7px; height: 7px; background: var(--text-3); border-radius: 50%; }
+    .status-count.success::before { background: var(--success); }
+    .status-count.blocked::before { background: var(--danger); }
+    .status-count strong { color: var(--text); font-weight: 600; }
+    .status-groups { padding: 16px 0 48px; }
+    .status-group { border-bottom: 1px solid var(--border); }
+    .status-group summary { min-height: 58px; display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; }
+    .status-group summary::-webkit-details-marker { display: none; }
+    .status-group summary strong { font-size: 14px; font-weight: 600; }
+    .status-group summary span:nth-child(2) { color: var(--text-2); font-size: 12px; }
+    .status-group summary .chevron { margin-left: auto; color: var(--text-2); transition: transform var(--motion); }
+    .status-group[open] summary .chevron { transform: rotate(180deg); }
+    .source-row { min-height: 54px; display: grid; grid-template-columns: 160px 100px 120px minmax(0,1fr); align-items: center; gap: 16px; padding: 0 12px; color: var(--text-2); background: var(--surface-hover); border-top: 1px solid var(--border); font-size: 12px; }
+    .source-row strong { color: var(--text); font-weight: 600; }
+    footer { min-height: 92px; display: flex; align-items: center; justify-content: space-between; gap: 24px; color: var(--text-2); border-top: 1px solid var(--border); font-size: 11px; }
+    footer strong { color: var(--text); font-size: 13px; font-weight: 600; }
+    @media (max-width: 980px) {
+      .header-inner, .shell { padding-right: 24px; padding-left: 24px; }
+      .source-tabs .source-tab:nth-child(n+3) { display: none; }
+      .deal-standard { grid-template-columns: 28px 60px minmax(0,1fr) 112px 76px; gap: 12px; }
+    }
+    @media (max-width: 760px) {
+      .app-header { height: 56px; }
+      .header-inner { padding: 0 16px; }
+      .primary-nav { position: fixed; z-index: 25; right: 0; bottom: 0; left: 0; height: 60px; justify-content: center; gap: 0; background: white; border-top: 1px solid var(--border); }
+      .nav-link { min-width: 0; flex: 1; flex-direction: column; gap: 3px; font-size: 11px; }
+      .nav-link::after { display: none; }
+      .manage-link { margin-left: auto; }
+      .shell { min-height: calc(100vh - 56px); padding: 0 16px 72px; }
+      .page-heading { min-height: 86px; }
+      .page-heading h1 { font-size: 23px; line-height: 32px; }
+      .freshness { font-size: 11px; }
+      .filter-bar { top: 56px; min-height: 108px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
+      .search-field { max-width: none; height: 42px; grid-column: 1 / -1; }
+      .toggle { padding-left: 4px; }
+      .source-tabs, .select-control.category-control { display: none; }
+      .sort-control { margin-left: auto; border-left: 0; }
+      .deal-featured { min-height: 158px; grid-template-columns: 22px 88px minmax(0,1fr); gap: 10px; padding: 14px 0; }
+      .deal-featured .deal-copy { align-self: start; }
+      .deal-featured .featured-actions { grid-column: 2 / -1; }
+      .deal-copy h2 { margin-top: 5px; display: -webkit-box; font-size: 14px; line-height: 20px; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+      .deal-price { margin-top: 5px; }
+      .deal-price strong { font-size: 14px; line-height: 20px; }
+      .deal-reason { margin-top: 5px; }
+      .deal-standard { min-height: 110px; grid-template-columns: 22px 64px minmax(0,1fr); grid-template-rows: auto auto; gap: 0 9px; padding: 10px 0; }
+      .deal-standard .rank { grid-row: 1 / 3; align-self: start; padding-top: 4px; }
+      .deal-standard .row-price { grid-column: 3; justify-self: start; margin-top: 6px; }
+      .deal-standard .actions { grid-column: 3; grid-row: 2; justify-self: end; }
+      .reaction { margin-top: 4px; }
+      .builder { grid-template-columns: 1fr; }
+      .builder .primary-action { width: 100%; }
+      .example-chips { flex-wrap: wrap; }
+      .status-summary { gap: 14px; }
+      .source-row { grid-template-columns: minmax(0,1fr) auto; padding: 10px; }
+      .source-row span:nth-child(3), .source-row span:nth-child(4) { font-size: 11px; }
+      footer { align-items: flex-start; flex-direction: column; justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="brand" href="#feed" data-view="feed" aria-label="딜레이더 홈">
+        <img src="../public/brand/deal-radar-slash-v1.png" alt="">
+        <strong>딜레이더</strong>
+      </a>
+      <nav class="primary-nav" aria-label="주요 화면">
+        <a class="nav-link active" href="#feed" data-view="feed"><span class="material-symbols-rounded filled">visibility</span><span>실시간 랭킹</span></a>
+        <a class="nav-link" href="#saved" data-view="saved"><span class="material-symbols-rounded">favorite</span><span>관심딜</span></a>
+      </nav>
+      <a class="manage-link" href="#status" data-view="status" aria-label="관리" title="관리"><span class="material-symbols-rounded">settings</span></a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="page active" id="feed" aria-labelledby="feed-title">
+      <div class="page-heading">
+        <h1 id="feed-title">실시간 핫딜</h1>
+        <div class="freshness">2분 전 업데이트</div>
+      </div>
+      <div class="filter-bar" aria-label="핫딜 필터">
+        <label class="search-field"><span class="material-symbols-rounded">search</span><input type="search" placeholder="상품명 검색" aria-label="상품명 검색"></label>
+        <button class="toggle" type="button" aria-pressed="true"><span class="toggle-mark" aria-hidden="true"></span>검증된 가격만</button>
+        <div class="source-tabs" aria-label="수집처 필터">
+          <button class="source-tab active" type="button">전체</button>
+          <button class="source-tab" type="button">뽐뿌</button>
+          <button class="source-tab" type="button">어미새</button>
+          <details class="sources-menu">
+            <summary class="menu-summary">소스 2개 <span class="material-symbols-rounded">expand_more</span></summary>
+            <div class="menu-panel">
+              <label><input type="checkbox"> 알구몬</label>
+              <label><input type="checkbox"> 펨코</label>
+            </div>
+          </details>
+        </div>
+        <label class="select-control category-control"><select aria-label="카테고리"><option>전체 카테고리</option><option>식품</option><option>디지털</option><option>패션</option><option>생활</option></select></label>
+        <label class="select-control sort-control"><span class="material-symbols-rounded">sort</span><select aria-label="정렬"><option>실시간 랭킹</option><option>반응순</option><option>최신순</option></select></label>
+      </div>
+
+      <div class="deal-list">
+        <article class="deal-row deal-featured">
+          <a class="row-link" href="http://127.0.0.1:3000/go/ppomppu_728774" target="_blank" rel="nofollow sponsored noopener" aria-label="판매처에서 가평잣막걸리맛 제로 750ml 5병 보기"></a>
+          <div class="rank" aria-label="실시간 1위">1</div>
+          <div class="deal-image"><img src="https://cdn2.ppomppu.co.kr/zboard/data/_thumb/ppomppu/4/small_728774.jpg?t=20260823" alt="가평잣막걸리맛 제로"></div>
+          <div class="deal-copy">
+            <div class="deal-meta"><span class="seller">롯데온</span><span>식품</span><span>2시간 전</span></div>
+            <h2>가평잣막걸리맛 제로 750ml 5병</h2>
+            <div class="deal-price"><strong>9,730원</strong><span>무료배송</span></div>
+            <div class="deal-reason"><span class="material-symbols-rounded">check</span>2시간 내 반응 상위 5%</div>
+            <div class="reaction">조회 2,121 · 댓글 6</div>
+          </div>
+          <div class="featured-actions actions"><button class="icon-button" type="button" aria-label="딜 저장"><span class="material-symbols-rounded">favorite</span></button></div>
+        </article>
+
+        <article class="deal-row deal-standard">
+          <a class="row-link" href="http://127.0.0.1:3000/go/ppomppu_728767" target="_blank" rel="nofollow sponsored noopener" aria-label="판매처에서 대복 찰순대 400g 3팩 외 골라담기 보기"></a>
+          <div class="rank" aria-label="실시간 2위">2</div>
+          <div class="deal-image"><img src="https://cdn2.ppomppu.co.kr/zboard/data/_thumb/ppomppu/7/small_728767.jpg?t=20260823" alt="대복 찰순대"></div>
+          <div class="deal-copy"><div class="deal-meta"><span class="seller">톡딜</span><span>식품</span><span>2시간 전</span></div><h2>대복 찰순대 400g 3팩 외 골라담기</h2><div class="reaction">조회 2,734 · 댓글 7</div></div>
+          <div class="row-price"><strong>10,957원</strong><span>무료배송</span></div>
+          <div class="actions"><button class="icon-button" type="button" aria-label="딜 저장"><span class="material-symbols-rounded">favorite</span></button></div>
+        </article>
+
+        <article class="deal-row deal-standard">
+          <a class="row-link" href="http://127.0.0.1:3000/go/ppomppu_728781" target="_blank" rel="nofollow sponsored noopener" aria-label="판매처에서 피데기 반건조오징어 10미 보기"></a>
+          <div class="rank" aria-label="실시간 3위">3</div>
+          <div class="deal-image"><img src="https://cdn2.ppomppu.co.kr/zboard/data/_thumb/ppomppu/1/small_728781.jpg?t=20260823" alt="반건조오징어"></div>
+          <div class="deal-copy"><div class="deal-meta"><span class="seller">네이버</span><span>식품</span><span>1시간 전</span></div><h2>피데기 반건조오징어 10미 1.1kg~1.3kg</h2><div class="reaction">조회 524 · 댓글 3</div></div>
+          <div class="row-price"><strong>21,400원</strong><span>배송 3,500원</span></div>
+          <div class="actions"><button class="icon-button" type="button" aria-label="딜 저장"><span class="material-symbols-rounded">favorite</span></button></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="page" id="saved" aria-labelledby="saved-title">
+      <div class="page-heading"><div><h1 id="saved-title">관심딜</h1><p>찾는 상품과 목표 가격을 등록해 두세요.</p></div></div>
+      <div class="empty-state">
+        <span class="material-symbols-rounded">favorite</span>
+        <h2>아직 만든 관심 조건이 없어요</h2>
+        <p>조건을 만들면 새로 들어온 딜과 자동으로 비교합니다.</p>
+        <button class="primary-action" id="open-builder" type="button"><span class="material-symbols-rounded">add</span>첫 관심 조건 만들기</button>
+        <div class="example-chips" aria-label="관심 조건 예시"><button class="example-chip" type="button" data-keyword="에어팟" data-price="200000">에어팟 20만원 이하</button><button class="example-chip" type="button" data-keyword="삼겹살 1kg">삼겹살 1kg</button></div>
+        <form class="builder" id="alert-builder">
+          <div class="field"><label for="keyword">관심 키워드</label><div class="input-shell"><input id="keyword" placeholder="예: 에어팟 프로"></div></div>
+          <div class="field"><label for="target-price">목표 가격</label><div class="input-shell"><input id="target-price" inputmode="numeric" placeholder="200,000"><span>원</span></div></div>
+          <button class="primary-action" type="button">조건 추가</button>
+        </form>
+      </div>
+      <div class="content-section"><div class="section-heading"><div><h2>저장한 딜</h2><p>비교할 상품을 한곳에 모아둡니다.</p></div></div><div class="saved-empty">랭킹에서 하트를 누르면 여기에 저장됩니다.</div></div>
+    </section>
+
+    <section class="page" id="status" aria-labelledby="status-title">
+      <div class="page-heading"><div><h1 id="status-title">수집 관리</h1><p>연결 상태와 최근 수집 결과를 확인합니다.</p></div><div class="freshness">마지막 확인 · 2분 전</div></div>
+      <div class="status-summary" aria-label="수집 상태 요약"><span class="status-count success"><strong>정상 4</strong></span><span class="status-count"><strong>설정 필요 4</strong></span><span class="status-count blocked"><strong>차단 2</strong></span></div>
+      <div class="status-groups">
+        <details class="status-group"><summary><strong>정상</strong><span>4개 소스</span><span class="material-symbols-rounded chevron">expand_more</span></summary><div class="source-row"><strong>뽐뿌</strong><span>21건</span><span>2분 전</span><span>공개 목록 정상 수집</span></div><div class="source-row"><strong>어미새</strong><span>19건</span><span>2분 전</span><span>공개 목록 정상 수집</span></div></details>
+        <details class="status-group"><summary><strong>설정 필요</strong><span>4개 소스</span><span class="material-symbols-rounded chevron">expand_more</span></summary><div class="source-row"><strong>네이버쇼핑</strong><span>0건</span><span>미연결</span><span>검색 API 자격 증명이 필요합니다.</span></div><div class="source-row"><strong>쿠팡</strong><span>0건</span><span>미연결</span><span>파트너스 API 연결이 필요합니다.</span></div></details>
+        <details class="status-group"><summary><strong>차단</strong><span>2개 소스</span><span class="material-symbols-rounded chevron">expand_more</span></summary><div class="source-row"><strong>퀘이사존</strong><span>0건</span><span>차단</span><span>승인 피드 또는 제휴 연결이 필요합니다.</span></div><div class="source-row"><strong>SSG</strong><span>0건</span><span>차단</span><span>공개 수집 대신 승인 피드가 필요합니다.</span></div></details>
+      </div>
+    </section>
+
+    <footer><strong>딜레이더</strong><span>일부 구매 링크를 통해 수수료를 받을 수 있습니다. 가격과 재고는 판매처에서 최종 확인됩니다.</span></footer>
+  </main>
+  <script>
+    const pages = [...document.querySelectorAll(".page")];
+    const links = [...document.querySelectorAll("[data-view]")];
+    function showView(id) {
+      pages.forEach((page) => page.classList.toggle("active", page.id === id));
+      links.forEach((link) => link.classList.toggle("active", link.dataset.view === id));
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+    links.forEach((link) => link.addEventListener("click", () => showView(link.dataset.view)));
+    showView(location.hash.slice(1) || "feed");
+    const builder = document.querySelector("#alert-builder");
+    document.querySelector("#open-builder").addEventListener("click", () => builder.classList.add("open"));
+    document.querySelectorAll(".example-chip").forEach((chip) => chip.addEventListener("click", () => {
+      builder.classList.add("open");
+      document.querySelector("#keyword").value = chip.dataset.keyword || "";
+      document.querySelector("#target-price").value = chip.dataset.price ? Number(chip.dataset.price).toLocaleString("ko-KR") : "";
+    }));
+  </script>
+</body>
+</html>

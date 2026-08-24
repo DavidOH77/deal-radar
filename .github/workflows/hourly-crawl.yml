@@ -1,0 +1,26 @@
+name: Hourly hot-deal crawl
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: hourly-hot-deal-crawl
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger production crawler
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_URL: ${{ secrets.CRON_URL }}
+        run: |
+          test -n "$CRON_SECRET"
+          test -n "$CRON_URL"
+          curl --fail-with-body --retry 2 --retry-all-errors --max-time 70 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$CRON_URL"
