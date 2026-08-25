@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DealsResponse } from "@/lib/deals/contracts";
-import { DISPLAY_CATEGORIES, SOURCE_LABELS, displayCategory, relativeTime } from "@/lib/deals/presentation";
+import { DISPLAY_CATEGORIES, displayCategory, relativeTime } from "@/lib/deals/presentation";
 import { dedupeDealsForDisplay } from "@/lib/deals/quality";
 import { calculateDisplayRankingScore, explainRanking } from "@/lib/deals/scoring";
-import type { Deal, SourceId } from "@/lib/deals/types";
+import type { Deal } from "@/lib/deals/types";
 import { DealCard } from "./deal-card";
 import { MaterialIcon } from "./material-icon";
 import { useDealPreferences } from "./use-deal-preferences";
@@ -18,8 +18,6 @@ const SORTS: Array<{ id: Sort; label: string }> = [
   { id: "new", label: "최신순" }
 ];
 
-const PRIMARY_SOURCES: SourceId[] = ["ppomppu", "eomisae", "fmkorea"];
-
 function reactionValue(deal: Deal): number {
   return (deal.reactions.likes ?? 0) * 12 +
     (deal.reactions.comments ?? 0) * 3 +
@@ -30,7 +28,6 @@ function reactionValue(deal: Deal): number {
 export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
   const [data, setData] = useState(initialData);
   const [sort, setSort] = useState<Sort>("hot");
-  const [source, setSource] = useState<"all" | SourceId>("all");
   const [category, setCategory] = useState("전체");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,19 +64,11 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
     };
   }, [loadDeals]);
 
-  const successfulSources = useMemo(() => data.sources
-    .filter((item) => item.status === "success")
-    .map((item) => item.source), [data.sources]);
-
-  const primarySources = PRIMARY_SOURCES.filter((id) => successfulSources.includes(id));
-  const secondarySources = successfulSources.filter((id) => !primarySources.includes(id));
-
   const visibleDeals = useMemo(() => {
     const rankingTime = new Date(data.asOf).getTime();
     const normalizedQuery = query.trim().normalize("NFKC").toLowerCase();
     const filtered = data.deals.filter((deal) => {
       if (deal.normalizedTitle === "list_adsense" || deal.sourceUrl.includes("/adlink_")) return false;
-      if (source !== "all" && deal.source !== source) return false;
       if (category !== "전체" && displayCategory(deal) !== category) return false;
       return !normalizedQuery || `${deal.normalizedTitle} ${deal.title}`.normalize("NFKC").toLowerCase().includes(normalizedQuery);
     });
@@ -92,7 +81,7 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
         b.publishedAt.localeCompare(a.publishedAt);
     });
     return dedupeDealsForDisplay(sorted, rankingTime);
-  }, [category, data.asOf, data.deals, query, sort, source]);
+  }, [category, data.asOf, data.deals, query, sort]);
 
   const featuredDeal = visibleDeals[0]?.dealPrice?.amount ? visibleDeals[0] : undefined;
   const compactDeals = featuredDeal ? visibleDeals.slice(1) : visibleDeals;
@@ -153,29 +142,6 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
           </button>
         </div>
 
-        <div className="source-filter-row" role="group" aria-label="수집처 필터">
-          <button className={`filter-pill ${source === "all" ? "active" : ""}`} onClick={() => setSource("all")}>전체</button>
-          {primarySources.map((id) => (
-            <button key={id} className={`filter-pill ${source === id ? "active" : ""}`} onClick={() => setSource(id)}>
-              {SOURCE_LABELS[id]}
-            </button>
-          ))}
-          {secondarySources.length ? (
-            <details className="source-menu">
-              <summary className={`filter-pill ${source !== "all" && secondarySources.includes(source) ? "active" : ""}`}>
-                소스 {secondarySources.length}개 <MaterialIcon name="expand_more" size={15} />
-              </summary>
-              <div className="source-menu-popover">
-                {secondarySources.map((id) => (
-                  <button key={id} className={source === id ? "active" : ""} onClick={() => setSource(id)}>
-                    {SOURCE_LABELS[id]}
-                    {source === id ? <MaterialIcon name="check" size={15} /> : null}
-                  </button>
-                ))}
-              </div>
-            </details>
-          ) : null}
-        </div>
       </section>
 
       {error ? <div className="error-banner" role="alert">업데이트하지 못했습니다. {error}</div> : null}
@@ -208,7 +174,7 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
           <div className="empty-state">
             <MaterialIcon name="search_off" size={24} />
             <strong>조건에 맞는 딜이 없습니다</strong>
-            <button type="button" onClick={() => { setQuery(""); setCategory("전체"); setSource("all"); }}>
+            <button type="button" onClick={() => { setQuery(""); setCategory("전체"); }}>
               필터 초기화
             </button>
           </div>

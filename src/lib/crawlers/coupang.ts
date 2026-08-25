@@ -1,9 +1,8 @@
-import { createHmac } from "node:crypto";
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
+import { COUPANG_API_HOST, coupangAuthorization } from "@/lib/integrations/coupang-affiliate";
 import { fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
 
-const API_HOST = "https://api-gateway.coupang.com";
 const GOLD_BOX_PATH = "/v2/providers/affiliate_open_api/apis/openapi/v1/products/goldbox";
 
 interface CoupangProduct {
@@ -16,24 +15,7 @@ interface CoupangProduct {
   rank?: number;
 }
 
-function signedDate(date = new Date()): string {
-  return date.toISOString().slice(2, 19).replace(/[-:]/g, "") + "Z";
-}
-
-export function coupangAuthorization(
-  method: string,
-  path: string,
-  query: string,
-  accessKey: string,
-  secretKey: string,
-  date = new Date()
-): string {
-  const datetime = signedDate(date);
-  const signature = createHmac("sha256", secretKey)
-    .update(`${datetime}${method}${path}${query}`)
-    .digest("hex");
-  return `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${datetime}, signature=${signature}`;
-}
+export { coupangAuthorization } from "@/lib/integrations/coupang-affiliate";
 
 export function parseCoupangProducts(
   data: CoupangProduct[],
@@ -83,7 +65,7 @@ export const coupangConnector: SourceConnector = {
       const query = process.env.COUPANG_SUB_ID
         ? `subId=${encodeURIComponent(process.env.COUPANG_SUB_ID)}`
         : "";
-      const url = `${API_HOST}${GOLD_BOX_PATH}${query ? `?${query}` : ""}`;
+      const url = `${COUPANG_API_HOST}${GOLD_BOX_PATH}${query ? `?${query}` : ""}`;
       const response = await fetchWithPolicy(url, {
         headers: {
           authorization: coupangAuthorization("GET", GOLD_BOX_PATH, query, accessKey, secretKey)

@@ -84,7 +84,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div className="detail-summary">
           <div className="deal-meta">
-            <span className="source">{presented.seller}</span>
+            <span className="source">{presented.seller ?? SOURCE_LABELS[deal.source]}</span>
             <span>{presented.category}</span>
             <span>{relativeTime(deal.publishedAt, now)}</span>
           </div>
@@ -129,7 +129,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
               const itemPresentation = presentDeal(item);
               return (
                 <a href={item.outboundUrl} target="_blank" rel="nofollow sponsored noopener" key={item.id}>
-                  <span>{itemPresentation.seller}</span>
+                  <span>{itemPresentation.seller ?? SOURCE_LABELS[item.source]}</span>
                   <strong>{item.dealPrice?.amount ? `${item.dealPrice.amount.toLocaleString("ko-KR")}원` : "가격 정보 없음"}</strong>
                   <small>추천 {formatMetric(item.reactions.likes)} · 댓글 {formatMetric(item.reactions.comments)}</small>
                 </a>

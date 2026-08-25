@@ -1,6 +1,7 @@
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
 import { fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
+import { qualifiesCommerceDiscount } from "./commerce-policy";
 
 interface FeedItem {
   id?: string | number;
@@ -11,6 +12,7 @@ interface FeedItem {
   category?: string;
   price?: number | string;
   originalPrice?: number | string;
+  curatedHotdeal?: boolean;
   publishedAt?: string;
   expiresAt?: string;
 }
@@ -26,7 +28,7 @@ export function parseGmarketFeed(
     const price = numberValue(String(item.price ?? ""));
     if (!sourceDealId || !title || !item.url || !price) return [];
     const originalPrice = numberValue(String(item.originalPrice ?? ""));
-    return [{
+    const deal: RawDeal = {
       source: "gmarket" as const,
       sourceMode: "approved_feed" as const,
       sourceDealId,
@@ -44,7 +46,8 @@ export function parseGmarketFeed(
         : undefined,
       reactions: {},
       collectedAt
-    }];
+    };
+    return item.curatedHotdeal || qualifiesCommerceDiscount(deal) ? [deal] : [];
   });
 }
 

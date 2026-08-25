@@ -38,6 +38,29 @@ describe("deal presentation", () => {
     expect(displayCategory({ title: "닌텐도 젤다의 전설", category: "네이버" })).toBe("게임/취미");
   });
 
+  it("lets the product noun override misleading beauty fragments and source categories", () => {
+    expect(displayCategory({ title: "뷰티레스트 올로 클래식 킹오브킹 침대", category: "뷰티" })).toBe("홈/가구");
+    expect(displayCategory({ title: "첵스초코 쿠키앤크림 시리얼 420g 4개", category: "뷰티" })).toBe("식품");
+    expect(displayCategory({ title: "블랙크림 고글후드 바람막이", category: "뷰티" })).toBe("패션");
+    expect(displayCategory({ title: "여성 린넨 가디건", category: "뷰티" })).toBe("패션");
+  });
+
+  it("keeps actual beauty products in the beauty category", () => {
+    expect(displayCategory({ title: "마데카크림 시즌7 기획세트", category: "기타" })).toBe("뷰티");
+    expect(displayCategory({ title: "수분 세럼과 로션 세트", category: "세일정보" })).toBe("뷰티");
+    expect(displayCategory({ title: "약산성 두피 샴푸 300ml", category: "생활" })).toBe("뷰티");
+    expect(displayCategory({ title: "퍼퓸 바디 미스트 250ml", category: "기타" })).toBe("뷰티");
+    expect(displayCategory({ title: "노글루 속눈썹 6종", category: "잡화" })).toBe("뷰티");
+  });
+
+  it("keeps electric hair tools in appliances", () => {
+    expect(displayCategory({ title: "파나소닉 헤어드라이어와 고데기 세트", category: "뷰티" })).toBe("가전");
+  });
+
+  it("does not expose a community source as a seller fallback", () => {
+    expect(presentDeal(deal({ title: "현미밥 24개 16,400원" })).seller).toBeUndefined();
+  });
+
   it("extracts a paid shipping amount from the trailing price block", () => {
     expect(presentDeal(deal({ title: "[네이버]반건조오징어 10미 (21,400원/3500원)" }))).toMatchObject({
       seller: "네이버",

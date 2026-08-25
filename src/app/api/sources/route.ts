@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { latestSourceHealth } from "@/lib/crawlers/health";
 import { requestId } from "@/lib/crawlers/run";
-import { canRunManualCrawl } from "@/lib/server/auth";
+import { affiliateConfigurationStatus } from "@/lib/deals/affiliate";
+import { canViewAdminData } from "@/lib/server/auth";
 import { logEvent, operationalError } from "@/lib/server/log";
 import { readStore } from "@/lib/store/file-store";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const id = requestId();
   const headers = { "x-request-id": id, "cache-control": "no-store" };
-  if (!canRunManualCrawl(request)) {
+  if (!canViewAdminData(request)) {
     return NextResponse.json({ ok: false, error: "unauthorized", requestId: id }, { status: 401, headers });
   }
   try {
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
       sources: latestSourceHealth(store.runs),
       runs: store.runs.slice(0, 20),
       activeLease: store.crawlLease ?? null,
+      affiliates: affiliateConfigurationStatus(),
       requestId: id
     }, { headers });
   } catch (error) {

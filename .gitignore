@@ -6,6 +6,7 @@ coverage/
 data/crawl-store.json
 data/crawl-store.*.tmp
 npm-debug.log*
+*.tsbuildinfo
 .vercel
 .env*
 !.env.example

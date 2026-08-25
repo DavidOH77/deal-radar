@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { buildAffiliateUrl, isSafeOutboundUrl } from "@/lib/deals/affiliate";
+import { isSafeOutboundUrl, resolveAffiliateUrl } from "@/lib/deals/affiliate";
 import { findDeal, recordClick } from "@/lib/store/file-store";
 import { logEvent, operationalError } from "@/lib/server/log";
 
@@ -14,7 +14,7 @@ export async function GET(
   const deal = await findDeal(id);
   if (!deal) return NextResponse.redirect(new URL("/", _request.url));
 
-  const outbound = buildAffiliateUrl(deal);
+  const outbound = await resolveAffiliateUrl(deal);
   if (!isSafeOutboundUrl(outbound.url)) {
     return NextResponse.redirect(new URL("/", _request.url));
   }
@@ -24,12 +24,16 @@ export async function GET(
         dealId: deal.id,
         source: deal.source,
         clickedAt: new Date().toISOString(),
-        affiliate: outbound.affiliate
+        affiliate: outbound.affiliate,
+        destinationProvider: outbound.provider,
+        affiliateMethod: outbound.method
       });
     } catch (error) {
       logEvent("error", "click_record_failed", {
         dealId: deal.id,
         source: deal.source,
+        destinationProvider: outbound.provider,
+        affiliateMethod: outbound.method,
         error: operationalError(error)
       });
     }

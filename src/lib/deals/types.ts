@@ -1,6 +1,8 @@
 export const SOURCE_IDS = [
   "algumon",
   "eomisae",
+  "theqoo",
+  "womencity",
   "fmkorea",
   "ppomppu",
   "quasarzone",
@@ -8,7 +10,9 @@ export const SOURCE_IDS = [
   "elevenst",
   "coupang",
   "gmarket",
-  "ssg"
+  "auction",
+  "ssg",
+  "oliveyoung"
 ] as const;
 
 export type SourceId = (typeof SOURCE_IDS)[number];
@@ -23,6 +27,8 @@ export type DealTier = "S" | "A" | "B" | "WATCH";
 export type CrawlTrigger = "cron" | "manual" | "bootstrap" | "development";
 export type CrawlRunStatus = "completed" | "failed";
 export type Confidence = "high" | "medium" | "low" | "unknown";
+export type CommerceProvider = "coupang" | "elevenst" | "gmarket" | "auction" | "naver" | "ssg" | "oliveyoung";
+export type AffiliateMethod = "provided_url" | "coupang_api" | "query" | "template" | "direct";
 export type BaselineKind =
   | "history_90d"
   | "market_median"
@@ -148,6 +154,8 @@ export interface ClickEvent {
   source: SourceId;
   clickedAt: string;
   affiliate: boolean;
+  destinationProvider?: CommerceProvider;
+  affiliateMethod?: AffiliateMethod;
 }
 
 export interface ClickAggregate {
@@ -156,6 +164,8 @@ export interface ClickAggregate {
   source: SourceId;
   date: string;
   affiliate: boolean;
+  destinationProvider?: CommerceProvider;
+  affiliateMethod?: AffiliateMethod;
   count: number;
   lastClickedAt: string;
 }

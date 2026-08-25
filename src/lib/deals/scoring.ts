@@ -9,12 +9,23 @@ const confidenceWeight: Record<Confidence, number> = {
 };
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+const FRESHNESS_GRACE_HOURS = 18;
+const POST_GRACE_HALF_LIFE_HOURS = 8;
+
+function ageInHours(publishedAt: string, now: number): number {
+  return Math.max(0, (now - new Date(publishedAt).getTime()) / 3_600_000);
+}
+
+function postGraceFreshness(ageHours: number): number {
+  const hoursPastGrace = Math.max(0, ageHours - FRESHNESS_GRACE_HOURS);
+  return Math.pow(2, -hoursPastGrace / POST_GRACE_HALF_LIFE_HOURS);
+}
 
 export function calculateRankingScore(
   deal: Pick<RawDeal, "publishedAt" | "reactions">,
   now = Date.now()
 ): number {
-  const ageHours = Math.max(0, (now - new Date(deal.publishedAt).getTime()) / 3_600_000);
+  const ageHours = ageInHours(deal.publishedAt, now);
   const views = Math.max(0, deal.reactions.views ?? 0);
   const recommendations = Math.max(0, deal.reactions.likes ?? 0);
   const comments = Math.max(0, deal.reactions.comments ?? 0);
@@ -29,7 +40,8 @@ export function calculateRankingScore(
     : Math.min(1.5, Math.log10(1 + views) * 0.3);
   const ageDecay = Math.pow(ageHours + 2, 0.82);
 
-  return (recommendationScore + commentScore + purchaseScore + viewSupport + (hasActiveReaction ? 0 : 1)) / ageDecay;
+  const engagement = recommendationScore + commentScore + purchaseScore + viewSupport + (hasActiveReaction ? 0 : 1);
+  return (engagement / ageDecay) * postGraceFreshness(ageHours);
 }
 
 export function calculateDisplayRankingScore(
@@ -39,7 +51,7 @@ export function calculateDisplayRankingScore(
   const base = calculateRankingScore(deal, now);
   if (!deal.trend?.rising) return base;
   const trendBoost = Math.min(45, Math.log10(1 + deal.trend.velocity) * 22);
-  return base + trendBoost;
+  return base + trendBoost * postGraceFreshness(ageInHours(deal.publishedAt, now));
 }
 
 export function explainRanking(

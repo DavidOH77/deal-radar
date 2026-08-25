@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "pretendard/dist/web/variable/pretendardvariable.css";
 import "./globals.css";
 
-const MATERIAL_SYMBOLS_URL = "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&icon_names=add,check,check_circle,close,delete,expand_more,favorite,image_not_supported,info,key,notifications,notifications_active,refresh,search,search_off,settings,share,trending_up,visibility,warning&display=block";
+const MATERIAL_SYMBOLS_URL = "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&icon_names=add,check,check_circle,close,delete,expand_more,favorite,image_not_supported,info,key,logout,notifications,notifications_active,refresh,search,search_off,settings,share,trending_up,visibility,warning&display=block";
 
 export const metadata: Metadata = {
   title: "딜레이더 | 여러 커뮤니티에서 지금 반응이 뜨는 딜",

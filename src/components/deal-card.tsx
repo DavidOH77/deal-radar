@@ -101,7 +101,7 @@ export function DealCard({
         <DealMedia deal={deal} eager={eager} title={presented.title} />
         <div className="deal-content">
           <div className="deal-meta">
-            <span className="source">{presented.seller}</span>
+            {presented.seller ? <span className="seller">{presented.seller}</span> : null}
             <span>{presented.category}</span>
             <span>{relativeTime(deal.publishedAt, referenceTime)}</span>
             {deal.trend?.rising ? <span className="trend-label">급상승</span> : null}
@@ -147,12 +147,24 @@ export function DealCard({
         <DealMedia deal={deal} eager={eager} compact title={presented.title} />
         <div className="compact-copy">
           <div className="deal-meta">
-            <span className="source">{presented.seller}</span>
+            {presented.seller ? <span className="seller">{presented.seller}</span> : null}
             <span>{presented.category}</span>
             <span>{relativeTime(deal.publishedAt, referenceTime)}</span>
             {deal.trend?.rising ? <span className="trend-label">급상승</span> : null}
           </div>
           <h2>{presented.title}</h2>
+          <div className="compact-mobile-facts">
+            {presented.seller ? <span className="mobile-seller">{presented.seller}</span> : null}
+            {deal.dealPrice?.amount ? <strong>{money(deal.dealPrice.amount)}</strong> : null}
+            {presented.shippingLabel ? <span>{presented.shippingLabel}</span> : null}
+            {discount ? <span className="discount">-{discount}%</span> : null}
+          </div>
+          <div className="compact-mobile-meta">
+            <span>{presented.category}</span>
+            <span>{relativeTime(deal.publishedAt, referenceTime)}</span>
+            {deal.reactions.likes !== undefined ? <span>추천 {formatMetric(deal.reactions.likes)}</span> : null}
+            {deal.reactions.comments !== undefined ? <span>댓글 {formatMetric(deal.reactions.comments)}</span> : null}
+          </div>
           <ReactionMetrics deal={deal} />
         </div>
       </div>

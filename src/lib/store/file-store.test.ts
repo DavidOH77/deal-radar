@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CrawlStore, Deal, RawDeal } from "@/lib/deals/types";
-import { clickCount, crawlRunStatus, isCrawlLeaseActive, mergeRawDeal } from "./file-store";
+import { clickCount, crawlRunStatus, isCrawlLeaseActive, isDisplayableDeal, mergeRawDeal } from "./file-store";
 
 const raw: RawDeal = {
   source: "fmkorea",
@@ -64,5 +64,15 @@ describe("mergeRawDeal", () => {
   it("marks a run failed when every source is unavailable", () => {
     expect(crawlRunStatus([{ status: "error" }, { status: "needs_credentials" }])).toBe("failed");
     expect(crawlRunStatus([{ status: "error" }, { status: "success" }])).toBe("completed");
+  });
+
+  it("hides explicitly ended deals and expired deals", () => {
+    const now = Date.parse("2026-08-23T02:00:00.000Z");
+    expect(isDisplayableDeal({ ...raw, title: "❌️라이브 끝❌️ 한우 특가" }, now)).toBe(false);
+    expect(isDisplayableDeal({ ...raw, title: "네이버 푸드페스타 선착순 ❌️소진❌️" }, now)).toBe(false);
+    expect(isDisplayableDeal({ ...raw, title: "Re: 페이코도됨" }, now)).toBe(false);
+    expect(isDisplayableDeal({ ...raw, expiresAt: "2026-08-23T01:59:59.000Z" }, now)).toBe(false);
+    expect(isDisplayableDeal({ ...raw, title: "품절풀림 베트남 그린망고 1,490원" }, now)).toBe(true);
+    expect(isDisplayableDeal(raw, now)).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import type { RawDeal, SourceConnector, SourceId } from "@/lib/deals/types";
 import { fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
+import { qualifiesCommerceDiscount } from "./commerce-policy";
 
 export interface ApprovedFeedItem {
   id?: string | number;
@@ -12,6 +13,7 @@ export interface ApprovedFeedItem {
   category?: string;
   price?: number | string;
   originalPrice?: number | string;
+  curatedHotdeal?: boolean;
   publishedAt?: string;
   expiresAt?: string;
   reactions?: {
@@ -25,7 +27,8 @@ export interface ApprovedFeedItem {
 export function parseApprovedFeed(
   source: SourceId,
   payload: ApprovedFeedItem[] | { items?: ApprovedFeedItem[] },
-  collectedAt = new Date().toISOString()
+  collectedAt = new Date().toISOString(),
+  policy: { minimumDiscountRate?: number; curatedByDefault?: boolean; defaultCategory?: string } = {}
 ): RawDeal[] {
   const items = Array.isArray(payload) ? payload : payload.items ?? [];
   return items.flatMap((item) => {
@@ -36,7 +39,7 @@ export function parseApprovedFeed(
     const price = numberValue(String(item.price ?? ""));
     const originalPrice = numberValue(String(item.originalPrice ?? ""));
 
-    return [{
+    const deal: RawDeal = {
       source,
       sourceMode: "approved_feed" as const,
       sourceDealId,
@@ -45,7 +48,7 @@ export function parseApprovedFeed(
       productUrl: item.productUrl,
       affiliateUrl: item.affiliateUrl,
       imageUrl: item.imageUrl,
-      category: item.category,
+      category: item.category ?? policy.defaultCategory,
       publishedAt: item.publishedAt ?? collectedAt,
       expiresAt: item.expiresAt,
       dealPrice: price ? { amount: price, currency: "KRW" as const } : undefined,
@@ -59,7 +62,14 @@ export function parseApprovedFeed(
         purchases: numberValue(String(item.reactions?.purchases ?? ""))
       },
       collectedAt
-    }];
+    };
+    if (
+      policy.minimumDiscountRate !== undefined
+      && !policy.curatedByDefault
+      && !item.curatedHotdeal
+      && !qualifiesCommerceDiscount(deal, policy.minimumDiscountRate)
+    ) return [];
+    return [deal];
   });
 }
 
@@ -68,6 +78,9 @@ export function createApprovedFeedConnector(config: {
   feedUrlEnv: string;
   feedTokenEnv: string;
   missingMessage: string;
+  minimumDiscountRate?: number;
+  curatedByDefault?: boolean;
+  defaultCategory?: string;
 }): SourceConnector {
   return {
     id: config.id,
@@ -102,7 +115,13 @@ export function createApprovedFeedConnector(config: {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const deals = parseApprovedFeed(
           config.id,
-          (await response.json()) as ApprovedFeedItem[] | { items?: ApprovedFeedItem[] }
+          (await response.json()) as ApprovedFeedItem[] | { items?: ApprovedFeedItem[] },
+          undefined,
+          {
+            minimumDiscountRate: config.minimumDiscountRate,
+            curatedByDefault: config.curatedByDefault,
+            defaultCategory: config.defaultCategory
+          }
         );
         return sourceResult({
           source: config.id,

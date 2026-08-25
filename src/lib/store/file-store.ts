@@ -15,7 +15,7 @@ import type {
   PriceSnapshot,
   RawDeal
 } from "@/lib/deals/types";
-import { canonicalKey, dealId, inferUnitPrice, normalizeRawDeal, normalizeTitle } from "@/lib/deals/normalize";
+import { canonicalKey, dealId, inferUnitPrice, isExplicitlyEndedTitle, normalizeRawDeal, normalizeTitle } from "@/lib/deals/normalize";
 import { calculateBaseline, calculateDisplayRankingScore, scoreDeal } from "@/lib/deals/scoring";
 import { calculateDealTrend } from "@/lib/deals/trend";
 
@@ -84,9 +84,13 @@ function parseRedisStore(value: unknown): CrawlStore {
   return structuredClone(EMPTY_STORE);
 }
 
-function isDisplayableDeal(deal: Pick<RawDeal, "title" | "sourceUrl" | "publishedAt">, now = Date.now()): boolean {
+export function isDisplayableDeal(
+  deal: Pick<RawDeal, "title" | "sourceUrl" | "publishedAt" | "expiresAt">,
+  now = Date.now()
+): boolean {
   const title = normalizeTitle(deal.title);
-  if (!title || title === "list_adsense" || deal.sourceUrl.includes("/adlink_")) return false;
+  if (!title || title === "list_adsense" || /^re\s*:/i.test(title) || deal.sourceUrl.includes("/adlink_") || isExplicitlyEndedTitle(deal.title)) return false;
+  if (deal.expiresAt && new Date(deal.expiresAt).getTime() <= now) return false;
   return new Date(deal.publishedAt).getTime() >= now - PUBLISHED_RETENTION_MS;
 }
 
@@ -331,10 +335,10 @@ export async function saveCrawlResults(
     const now = Date.now();
     const rawDeals = results
       .flatMap((result) => result.deals)
-      .map(normalizeRawDeal)
-      .filter((deal) => isDisplayableDeal(deal, now));
+      .map(normalizeRawDeal);
+    const displayableRawDeals = rawDeals.filter((deal) => isDisplayableDeal(deal, now));
 
-    for (const raw of rawDeals) {
+    for (const raw of displayableRawDeals) {
       const key = canonicalKey(raw.source, raw.sourceDealId, raw.title);
       if (shouldSnapshot(store.priceSnapshots, raw, key) && raw.dealPrice) {
         store.priceSnapshots.push({
@@ -354,6 +358,10 @@ export async function saveCrawlResults(
     const dealMap = new Map(store.deals.map((deal) => [deal.id, deal]));
     for (const raw of rawDeals) {
       const id = dealId(raw.source, raw.sourceDealId);
+      if (!isDisplayableDeal(raw, now)) {
+        dealMap.delete(id);
+        continue;
+      }
       const previous = dealMap.get(id);
       const merged = mergeRawDeal(previous, raw);
       dealMap.set(id, hydrate(merged, store.priceSnapshots, calculateDealTrend(previous, merged)));
@@ -380,7 +388,7 @@ export async function saveCrawlResults(
         finishedAt: result.finishedAt,
         message: result.message
       })),
-      totalCollected: rawDeals.length,
+      totalCollected: displayableRawDeals.length,
       status,
       trigger: context?.trigger,
       requestId: context?.requestId,
@@ -427,7 +435,10 @@ export async function findDeal(id: string): Promise<Deal | undefined> {
 
 function aggregateClick(aggregates: ClickAggregate[], event: ClickEvent): void {
   const date = event.clickedAt.slice(0, 10);
-  const key = `${date}:${event.dealId}:${event.affiliate ? "affiliate" : "direct"}`;
+  const attribution = event.destinationProvider || event.affiliateMethod
+    ? `:${event.destinationProvider ?? "unknown"}:${event.affiliateMethod ?? "unknown"}`
+    : "";
+  const key = `${date}:${event.dealId}:${event.affiliate ? "affiliate" : "direct"}${attribution}`;
   const existing = aggregates.find((item) => item.key === key);
   if (existing) {
     existing.count += 1;
@@ -440,6 +451,8 @@ function aggregateClick(aggregates: ClickAggregate[], event: ClickEvent): void {
     source: event.source,
     date,
     affiliate: event.affiliate,
+    destinationProvider: event.destinationProvider,
+    affiliateMethod: event.affiliateMethod,
     count: 1,
     lastClickedAt: event.clickedAt
   });

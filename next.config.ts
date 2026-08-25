@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "cdn.algumon.com" },
       { protocol: "https", hostname: "img.eomisae.co.kr" },
+      { protocol: "https", hostname: "img-cdn.theqoo.net" },
+      { protocol: "https", hostname: "img1.daumcdn.net" },
+      { protocol: "https", hostname: "t1.daumcdn.net" },
+      { protocol: "https", hostname: "scrap.kakaocdn.net" },
       { protocol: "https", hostname: "**.fmkorea.com" },
       { protocol: "https", hostname: "**.ppomppu.co.kr" },
       { protocol: "https", hostname: "**.pstatic.net" },

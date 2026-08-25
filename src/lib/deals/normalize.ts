@@ -3,6 +3,9 @@ import type { RawDeal, SourceId } from "./types";
 
 const PROMO_WORDS = /\b(핫딜|특가|최저가|단독|오늘만|무료배송|쿠폰|카드할인)\b/gi;
 const SPACE = /\s+/g;
+const ENDED_TITLE_PREFIX = /^[\s❌️🚫⛔]*(?:종료(?:됨|완료)?|품절(?!\s*풀림)|마감(?:됨|완료)?|라이브\s*끝)(?=$|[\s:;!?.~)\]】❌️🚫⛔])/i;
+const ENDED_TITLE_SUFFIX = /(?:쿠폰\s*)?(?:소진|판매\s*종료|행사\s*종료|종료(?:됨|완료)?|품절|마감(?:됨|완료)?)[\s❌️🚫⛔!?.~)\]】]*$/i;
+const DECORATED_ENDED_MARKER = /[❌🚫⛔]\ufe0f?\s*(?:소진|종료|품절|마감)\s*[❌🚫⛔]/i;
 
 export function normalizeTitle(title: string): string {
   return title
@@ -12,6 +15,13 @@ export function normalizeTitle(title: string): string {
     .replace(SPACE, " ")
     .trim()
     .toLowerCase();
+}
+
+export function isExplicitlyEndedTitle(title: string): boolean {
+  const normalized = title.normalize("NFKC").trim();
+  return ENDED_TITLE_PREFIX.test(normalized)
+    || ENDED_TITLE_SUFFIX.test(normalized)
+    || DECORATED_ENDED_MARKER.test(normalized);
 }
 
 export function canonicalKey(source: SourceId, sourceDealId: string, title: string): string {
@@ -40,7 +50,9 @@ export function inferCategory(raw: Pick<RawDeal, "title" | "category">): string 
   const title = raw.title.toLowerCase();
   if (/생수|음료|커피|김치|과자|고기|식품|라면/.test(title)) return "식품";
   if (/ssd|모니터|노트북|키보드|마우스|이어폰|스마트폰|게임/.test(title)) return "디지털";
+  if (/냉장고|세탁기|건조기|에어컨|청소기|공기청정기|제습기|식기세척기|전자레인지|헤어드라이어|드라이기|고데기/.test(title)) return "가전";
   if (/신발|운동화|티셔츠|셔츠|팬츠|자켓|니트|나이키|아디다스/.test(title)) return "패션";
+  if (/화장품|스킨케어|토너|에센스|세럼|앰플|로션|선크림|선스틱|아이크림|수분크림|재생크림|마데카크림|향수|립밤|립스틱|립글로스|립펜슬|틴트|쿠션|파운데이션|마스카라|아이섀도|아이브로우|아이라이너|컨실러|블러셔|메이크업|클렌징|클렌저|마스크팩|네일|샴푸|린스|트리트먼트|헤어팩|헤어토닉|헤어오일|두피|바디\s*(?:로션|워시|미스트)|괄사|속눈썹|화장솜/.test(title)) return "뷰티";
   if (/휴지|세제|샴푸|워셔|키친타월|마스크/.test(title)) return "생활";
   return "기타";
 }

@@ -106,6 +106,15 @@ describe("calculateRankingScore", () => {
     expect(scoreNow).toBeGreaterThan(scoreTomorrow);
   });
 
+  it("demotes deals sharply after the same-day freshness window", () => {
+    const eighteenHours = calculateRankingScore(raw, now.getTime() + 18 * 3_600_000);
+    const twentySixHours = calculateRankingScore(raw, now.getTime() + 26 * 3_600_000);
+    const fortyTwoHours = calculateRankingScore(raw, now.getTime() + 42 * 3_600_000);
+
+    expect(twentySixHours).toBeLessThan(eighteenHours * 0.45);
+    expect(fortyTwoHours).toBeLessThan(eighteenHours * 0.08);
+  });
+
   it("adds a bounded boost when reactions are rising between crawls", () => {
     const stable = { ...raw, trend: undefined };
     const rising = {
@@ -123,6 +132,25 @@ describe("calculateRankingScore", () => {
     };
     expect(calculateDisplayRankingScore(rising, now.getTime()))
       .toBeGreaterThan(calculateDisplayRankingScore(stable, now.getTime()));
+  });
+
+  it("does not let an old rising flag bypass freshness decay", () => {
+    const trend = {
+      windowMinutes: 60,
+      viewsDelta: 1_000,
+      likesDelta: 10,
+      commentsDelta: 3,
+      purchasesDelta: 0,
+      velocity: 80,
+      rising: true,
+      measuredAt: now.toISOString()
+    };
+    const recent = { ...raw, trend, publishedAt: new Date(now.getTime() - 2 * 3_600_000).toISOString() };
+    const old = { ...raw, trend, publishedAt: new Date(now.getTime() - 42 * 3_600_000).toISOString() };
+    const recentBoost = calculateDisplayRankingScore(recent, now.getTime()) - calculateRankingScore(recent, now.getTime());
+    const oldBoost = calculateDisplayRankingScore(old, now.getTime()) - calculateRankingScore(old, now.getTime());
+
+    expect(oldBoost).toBeLessThan(recentBoost * 0.13);
   });
 });
 

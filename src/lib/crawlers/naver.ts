@@ -2,6 +2,8 @@ import * as cheerio from "cheerio";
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
 import { fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
+import { parseApprovedFeed, type ApprovedFeedItem } from "./approved-feed";
+import { COMMERCE_MIN_DISCOUNT_RATE, filterCommerceDeals } from "./commerce-policy";
 
 const API_URL = "https://openapi.naver.com/v1/search/shop.json";
 
@@ -17,11 +19,11 @@ interface NaverShoppingItem {
 }
 
 function shoppingQueries(): string[] {
-  return (process.env.NAVER_SHOPPING_QUERIES ?? process.env.CRAWL_KEYWORDS ?? "생수,휴지,커피,SSD,모니터,운동화")
+  return (process.env.NAVER_SHOPPING_QUERIES ?? process.env.CRAWL_KEYWORDS ?? "생수,휴지,커피,SSD,모니터,운동화,선크림,로션,마스크팩,향수")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, 12);
 }
 
 export function parseNaverShopping(
@@ -56,19 +58,44 @@ export const naverConnector: SourceConnector = {
   mode: "official_api",
   async collect() {
     const startedAt = new Date().toISOString();
+    const promotionFeedUrl = process.env.NAVER_PROMOTION_FEED_URL;
     const clientId = process.env.NAVER_CLIENT_ID;
     const clientSecret = process.env.NAVER_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
+    if (!promotionFeedUrl && (!clientId || !clientSecret)) {
       return sourceResult({
         source: this.id,
         mode: this.mode,
         status: "needs_credentials",
         startedAt,
-        message: "네이버 쇼핑 검색 API의 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET이 필요합니다."
+        message: "네이버 프로모션 승인 피드 또는 쇼핑 검색 API 인증값이 필요합니다. 검색 API 최저가는 할인 기준가로 쓰지 않습니다."
       });
     }
 
     try {
+      if (promotionFeedUrl) {
+        const response = await fetchWithPolicy(promotionFeedUrl, {
+          headers: process.env.NAVER_PROMOTION_FEED_TOKEN
+            ? { authorization: `Bearer ${process.env.NAVER_PROMOTION_FEED_TOKEN}` }
+            : undefined
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const deals = parseApprovedFeed(
+          "naver",
+          (await response.json()) as ApprovedFeedItem[] | { items?: ApprovedFeedItem[] },
+          undefined,
+          { minimumDiscountRate: COMMERCE_MIN_DISCOUNT_RATE }
+        );
+        return sourceResult({
+          source: this.id,
+          mode: "approved_feed",
+          status: "success",
+          startedAt,
+          deals,
+          message: `승인된 프로모션 피드에서 특가 편성 또는 40% 이상 ${deals.length}건 수집`
+        });
+      }
+      if (!clientId || !clientSecret) throw new Error("네이버 쇼핑 API 인증값이 없습니다.");
+
       const results = await Promise.all(shoppingQueries().map(async (query) => {
         const url = new URL(API_URL);
         url.searchParams.set("query", query);
@@ -84,14 +111,15 @@ export const naverConnector: SourceConnector = {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return parseNaverShopping((await response.json()) as { items?: NaverShoppingItem[] });
       }));
-      const deals = [...new Map(results.flat().map((deal) => [deal.sourceDealId, deal])).values()];
+      const candidates = [...new Map(results.flat().map((deal) => [deal.sourceDealId, deal])).values()];
+      const deals = filterCommerceDeals(candidates);
       return sourceResult({
         source: this.id,
         mode: this.mode,
         status: "success",
         startedAt,
         deals,
-        message: `공식 쇼핑 검색 API에서 ${deals.length}건 수집`
+        message: `공식 쇼핑 검색 ${candidates.length}건 확인, 정상가 근거를 갖춘 40% 이상 상품 ${deals.length}건 공개`
       });
     } catch (error) {
       return sourceResult({

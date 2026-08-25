@@ -1,6 +1,6 @@
 # 딜레이더 MVP
 
-알구몬, 어미새, 펨코, 뽐뿌, 퀘이사존과 네이버쇼핑, 11번가, 쿠팡, G마켓, SSG의 딜 후보를 한 형식으로 수집하고 가격 이력과 반응 지표로 핫딜을 검증하는 Next.js 앱입니다.
+알구몬, 어미새, 덬딜, 여성시대, 에펨코리아, 뽐뿌, 퀘이사존과 네이버쇼핑, 11번가, 쿠팡, G마켓, 옥션, SSG, 올리브영의 딜 후보를 한 형식으로 수집하고 가격 이력과 반응 지표로 핫딜을 검증하는 Next.js 앱입니다.
 
 ## 실행
 
@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-환경변수 없이도 알구몬, 어미새, 펨코 베스트, 뽐뿌 공개 목록 수집은 동작합니다. 첫 화면 진입 또는 새로고침 버튼으로 로컬 수집이 실행되고 결과는 `data/crawl-store.json`에 저장됩니다.
+환경변수 없이도 알구몬, 어미새, 덬딜, 여성시대 세일정보, 에펨코리아 베스트, 뽐뿌 공개 목록 수집은 동작합니다. 첫 화면 진입 또는 새로고침 버튼으로 로컬 수집이 실행되고 결과는 `data/crawl-store.json`에 저장됩니다.
 
 ## 소스 연결
 
@@ -18,22 +18,26 @@ npm run dev
 | --- | --- | --- |
 | 알구몬 | 공개 JSON-LD | 없음 |
 | 어미새 | 공개 쇼핑정보 목록 | 없음, 5초 crawl-delay 준수 |
-| 펨코 | robots.txt가 허용한 `/best`의 핫딜 항목 | 없음 |
+| 덬딜 | 더쿠의 공개 핫딜 목록과 원문 리다이렉트 | 없음 |
+| 여성시대 | 공개 세일정보 목록과 게시글 메타데이터 | 없음 |
+| 에펨코리아 | robots.txt가 허용한 `/best`의 핫딜 항목 | 없음 |
 | 뽐뿌 | 공개 뽐뿌게시판 | 없음 |
-| 퀘이사존 | 승인된 제휴/데이터 피드 | `QUASARZONE_FEED_URL`, 선택 `QUASARZONE_FEED_TOKEN` |
-| 네이버쇼핑 | 공식 쇼핑 검색 API | `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` |
+| 퀘이사존 | 승인 피드 또는 네이버 공식 웹문서 검색 API | `QUASARZONE_FEED_URL` 또는 `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET` |
+| 네이버쇼핑 | 승인 프로모션 피드 또는 공식 쇼핑 검색 API | `NAVER_PROMOTION_FEED_URL` 또는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` |
 | 11번가 | 공식 상품 검색 API | `ELEVENST_API_KEY` |
 | 쿠팡 | 쿠팡 파트너스 골드박스 API | `COUPANG_ACCESS_KEY`, `COUPANG_SECRET_KEY`, 선택 `COUPANG_SUB_ID` |
 | G마켓 | 승인된 제휴 데이터 피드 | `GMARKET_FEED_URL`, 선택 `GMARKET_FEED_TOKEN` |
+| 옥션 | 승인된 제휴 데이터 피드 | `AUCTION_FEED_URL`, 선택 `AUCTION_FEED_TOKEN` |
 | SSG | 승인된 상품/제휴 피드 | `SSG_FEED_URL`, 선택 `SSG_FEED_TOKEN` |
+| 올리브영 | 승인된 오특 상품 피드 | `OLIVEYOUNG_FEED_URL`, 선택 `OLIVEYOUNG_FEED_TOKEN` |
 
-펨코의 `/hotdeal` 직접 수집, 11번가 쇼킹딜 공개 페이지, SSG 공개 랭킹 페이지는 robots.txt 정책상 수집하지 않습니다. 퀘이사존, 쿠팡, G마켓 공개 페이지도 서버 요청 또는 봇 확인에 막히므로 운영 수집기는 허용된 목록, 공식 API, 승인 피드만 사용합니다.
+에펨코리아의 `/hotdeal` 직접 수집, 11번가 쇼킹딜 공개 페이지, SSG 공개 랭킹 페이지는 robots.txt 정책상 수집하지 않습니다. 퀘이사존, 쿠팡, G마켓, 옥션, 올리브영 공개 페이지도 서버 요청 또는 봇 확인에 막히므로 운영 수집기는 허용된 목록, 공식 API, 승인 피드만 사용합니다. 퀘이사존은 승인 피드를 우선하고, 피드가 없으면 네이버 웹문서 검색 API 결과 중 정확한 핫딜 URL과 게시 시각이 확인되는 글만 보조 수집합니다. 덬딜과 여성시대는 본문을 저장하지 않고 공개 목록 메타데이터만 수집합니다. 덬딜의 판매 이동에는 더쿠의 자체 리다이렉트를 유지합니다.
 
-네이버쇼핑과 오픈마켓의 상위 노출은 곧바로 핫딜이라는 뜻이 아닙니다. 이 소스들은 상품과 현재가 후보를 공급하고, 커뮤니티 반응 및 누적 가격 이력과 결합해 최종 순위를 정합니다.
+네이버쇼핑과 오픈마켓의 상위 노출은 곧바로 핫딜이라는 뜻이 아닙니다. 일반 상품 검색과 피드는 판매가와 정상가가 모두 있고 할인율이 40% 이상일 때만 공개 딜로 저장합니다. 네이버 쇼핑 검색 API의 `hprice`는 정상가가 아니라 검색 결과의 최고가이므로 할인 기준가로 사용하지 않습니다. 골드박스·오특·올킬·슈퍼딜처럼 판매처가 직접 편성한 특가 섹션은 승인 피드의 `curatedHotdeal` 근거로 별도 통과시킬 수 있습니다.
 
 ### 승인 피드 형식
 
-퀘이사존, G마켓, SSG 피드는 배열 또는 `{ "items": [] }` 형식을 받을 수 있습니다. `affiliateUrl`과 반응 수치는 선택 값입니다.
+퀘이사존과 오픈마켓 승인 피드는 배열 또는 `{ "items": [] }` 형식을 받을 수 있습니다. `affiliateUrl`, `curatedHotdeal`, 반응 수치는 선택 값입니다. 쇼핑몰 일반 상품은 `originalPrice` 대비 40% 이상이어야 하며, 공식 특가 섹션 상품만 `curatedHotdeal: true`로 표시합니다.
 
 ```json
 {
@@ -47,6 +51,7 @@ npm run dev
     "category": "디지털",
     "price": 99000,
     "originalPrice": 129000,
+    "curatedHotdeal": true,
     "publishedAt": "2026-08-23T12:00:00+09:00",
     "reactions": { "likes": 42, "comments": 11, "views": 5200, "purchases": 18 }
   }]
@@ -55,14 +60,29 @@ npm run dev
 
 ## 제휴 링크
 
-쿠팡 파트너스 API가 돌려준 URL은 제휴 URL로 저장됩니다. 11번가, G마켓, 네이버쇼핑, SSG는 제휴사에서 받은 딥링크 형식을 환경변수 템플릿으로 설정할 수 있습니다. 승인 피드가 `affiliateUrl`을 직접 제공하면 그 값을 우선 사용합니다.
+제휴 처리는 커뮤니티 출처가 아니라 최종 `productUrl`의 판매처 도메인을 기준으로 클릭 시점에 수행합니다. 따라서 뽐뿌에서 수집한 글이어도 상품 링크가 11번가라면 11번가 규칙을 적용하고, 글의 원래 출처와 랭킹 데이터는 그대로 보존합니다.
+
+처리 우선순위는 다음과 같습니다.
+
+1. 공식 API나 승인 피드가 제공한 `affiliateUrl`
+2. 쿠팡 상품 URL의 파트너스 딥링크 API 변환
+3. 판매처가 승인한 추적 쿼리 키와 매체 값
+4. 제휴사가 제공한 딥링크 템플릿
+5. 설정이 없거나 변환에 실패하면 원본 상품 URL
+
+쿠팡은 `COUPANG_ACCESS_KEY`, `COUPANG_SECRET_KEY`, 선택 `COUPANG_SUB_ID`로 딥링크를 생성합니다. 첫 변환 결과는 서버 메모리에 기본 7일 캐시하고 API가 늦거나 실패하면 2.5초 안에 원본 URL로 폴백합니다. 11번가, G마켓, 옥션, 네이버쇼핑, SSG, 올리브영은 제휴사에서 발급받은 쿼리 키 또는 딥링크 형식을 환경변수로 설정합니다. 임의로 추정한 파라미터는 정산을 보장하지 않으므로 등록하지 않습니다.
 
 ```dotenv
 AFFILIATE_11ST_ID=your-media-id
+AFFILIATE_11ST_QUERY_KEY=partner_issued_key
+# QUERY_VALUE를 생략하면 AFFILIATE_11ST_ID를 사용합니다.
+AFFILIATE_11ST_QUERY_VALUE=
 AFFILIATE_11ST_TEMPLATE=https://affiliate.example/deeplink?media={id}&url={url}
 ```
 
-목록에는 항상 내부 `/go/{dealId}` 링크를 사용합니다. 클릭 시점에 제휴 링크를 만들고 클릭 이벤트를 기록하며, 설정이 없으면 원본 상품 URL로 이동합니다.
+쿼리 방식은 해당 판매처 도메인에만 적용하고 기존 상품 파라미터와 해시를 보존합니다. `url`, `redirect`, `returnUrl`처럼 이동 대상을 바꿀 수 있는 키와 유사 도메인은 거부합니다. 템플릿의 `{url}`은 URL 인코딩되고 `{id}`에는 매체 ID가 들어갑니다.
+
+목록에는 항상 내부 `/go/{dealId}` 링크를 사용합니다. 클릭 집계에는 원 커뮤니티 출처와 함께 최종 판매처, `provided_url`·`coupang_api`·`query`·`template`·`direct` 처리 방식을 기록해 판매처별 제휴 전환 여부를 확인할 수 있습니다.
 
 ## 판정 원칙
 

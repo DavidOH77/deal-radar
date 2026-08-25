@@ -2,15 +2,16 @@ import * as cheerio from "cheerio";
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
 import { absoluteUrl, fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
+import { filterCommerceDeals } from "./commerce-policy";
 
 const API_URL = "https://openapi.11st.co.kr/openapi/OpenApiService.tmall";
 
 function keywords(): string[] {
-  return (process.env.CRAWL_KEYWORDS ?? "생수,휴지,커피,SSD,모니터,운동화")
+  return (process.env.ELEVENST_QUERIES ?? process.env.CRAWL_KEYWORDS ?? "생수,휴지,커피,SSD,모니터,운동화,선크림,로션,마스크팩,향수")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, 12);
 }
 
 export function parseElevenstXml(xml: string, collectedAt = new Date().toISOString()): RawDeal[] {
@@ -78,14 +79,15 @@ export const elevenstConnector: SourceConnector = {
           return parseElevenstXml(await response.text());
         })
       );
-      const deals = [...new Map(results.flat().map((deal) => [deal.sourceDealId, deal])).values()];
+      const candidates = [...new Map(results.flat().map((deal) => [deal.sourceDealId, deal])).values()];
+      const deals = filterCommerceDeals(candidates);
       return sourceResult({
         source: this.id,
         mode: this.mode,
         status: "success",
         startedAt,
         deals,
-        message: `공식 상품 검색 API에서 ${deals.length}건 수집`
+        message: `공식 상품 검색 ${candidates.length}건 중 정상가 대비 40% 이상 ${deals.length}건 수집`
       });
     } catch (error) {
       return sourceResult({
