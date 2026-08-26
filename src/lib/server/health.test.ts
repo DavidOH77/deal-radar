@@ -59,8 +59,33 @@ describe("backendHealth", () => {
       status: "ready",
       storage: { backend: "local_file", ready: true },
       crawl: { ageMinutes: 30, stale: false },
-      data: { deals: 1, pricedDeals: 1, risingDeals: 1 }
+      sources: { healthy: SOURCE_IDS.length, failed: 0, total: SOURCE_IDS.length, successRate: 100 },
+      data: {
+        deals: 1,
+        pricedDeals: 1,
+        pricedRate: 100,
+        missingImageDeals: 1,
+        missingImageRate: 100,
+        risingDeals: 1
+      }
     });
+  });
+
+  it("reports partial source failure as degraded without exposing source identities", () => {
+    delete process.env.VERCEL;
+    const value = store("2026-08-23T23:30:00.000Z");
+    value.deals[0].imageUrl = "https://example.com/image.jpg";
+    value.runs[0].sources[0].status = "error";
+
+    const health = backendHealth(value, Date.parse("2026-08-24T00:00:00.000Z"));
+
+    expect(health).toMatchObject({
+      ok: true,
+      status: "degraded",
+      sources: { healthy: SOURCE_IDS.length - 1, failed: 1, total: SOURCE_IDS.length },
+      data: { missingImageDeals: 0, missingImageRate: 0 }
+    });
+    expect(JSON.stringify(health)).not.toContain(SOURCE_IDS[0]);
   });
 
   it("fails health when a production store is not configured", () => {

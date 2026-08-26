@@ -22,14 +22,24 @@ export function backendHealth(store: CrawlStore, now = Date.now()) {
   const stale = ageMinutes === null || ageMinutes > maxCrawlAgeMinutes();
   const sourceHealth = latestSourceHealth(store.runs);
   const healthySources = sourceHealth.filter((source) => source.status === "success").length;
+  const failedSources = sourceHealth.length - healthySources;
   const pricedDeals = store.deals.filter((deal) => deal.dealPrice?.amount).length;
+  const missingImageDeals = store.deals.filter((deal) => !deal.imageUrl).length;
   const risingDeals = store.deals.filter((deal) => deal.trend?.rising).length;
   const storageReady = backend !== "misconfigured";
   const ok = storageReady && store.deals.length > 0 && (!stale || Boolean(activeLease));
+  const degraded = ok && failedSources > 0;
+  const percent = (value: number, total: number) => total ? Math.round((value / total) * 1_000) / 10 : 0;
 
   return {
     ok,
-    status: !storageReady ? "storage_misconfigured" : stale && !activeLease ? "crawl_stale" : "ready",
+    status: !storageReady
+      ? "storage_misconfigured"
+      : stale && !activeLease
+        ? "crawl_stale"
+        : degraded
+          ? "degraded"
+          : "ready",
     storage: { backend, ready: storageReady },
     crawl: {
       running: Boolean(activeLease),
@@ -40,11 +50,16 @@ export function backendHealth(store: CrawlStore, now = Date.now()) {
     },
     sources: {
       healthy: healthySources,
-      total: sourceHealth.length
+      failed: failedSources,
+      total: sourceHealth.length,
+      successRate: percent(healthySources, sourceHealth.length)
     },
     data: {
       deals: store.deals.length,
       pricedDeals,
+      pricedRate: percent(pricedDeals, store.deals.length),
+      missingImageDeals,
+      missingImageRate: percent(missingImageDeals, store.deals.length),
       risingDeals
     }
   };
