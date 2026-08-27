@@ -38,11 +38,11 @@ export function AppHeader({ isAdmin }: { isAdmin: boolean }) {
           <strong>딜레이더</strong>
         </Link>
         <nav className="primary-nav" aria-label="주요 화면">
-          <Link className={`nav-link ${pathname === "/" ? "active" : ""}`} href="/" aria-current={pathname === "/" ? "page" : undefined}>
+          <Link className={`nav-link ${pathname === "/" ? "active" : ""}`} href="/" aria-label="핫딜 랭킹" aria-current={pathname === "/" ? "page" : undefined}>
             <MaterialIcon name="visibility" size={19} filled={pathname === "/"} />
             <span>핫딜 랭킹</span>
           </Link>
-          <Link className={`nav-link ${pathname === "/saved" ? "active" : ""}`} href="/saved" aria-current={pathname === "/saved" ? "page" : undefined}>
+          <Link className={`nav-link ${pathname === "/saved" ? "active" : ""}`} href="/saved" aria-label="관심딜" aria-current={pathname === "/saved" ? "page" : undefined}>
             <MaterialIcon name="favorite" size={19} filled={pathname === "/saved"} />
             <span>관심딜</span>
           </Link>

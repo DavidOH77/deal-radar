@@ -1,6 +1,28 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { CrawlStore, Deal, RawDeal } from "@/lib/deals/types";
-import { clickCount, crawlRunStatus, isCrawlLeaseActive, isDisplayableDeal, mergeRawDeal } from "./file-store";
+import { clickCount, crawlRunStatus, isCrawlLeaseActive, isDisplayableDeal, mergeRawDeal, storageBackend } from "./file-store";
+
+const storageEnvironment = [
+  "VERCEL",
+  "USE_CLOUD_STORE",
+  "BLOB_READ_WRITE_TOKEN",
+  "BLOB_STORE_ID",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "KV_REST_API_URL",
+  "KV_REST_API_TOKEN"
+] as const;
+const originalStorageEnvironment = Object.fromEntries(
+  storageEnvironment.map((key) => [key, process.env[key]])
+);
+
+afterEach(() => {
+  for (const key of storageEnvironment) {
+    const value = originalStorageEnvironment[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const raw: RawDeal = {
   source: "fmkorea",
@@ -33,6 +55,28 @@ describe("mergeRawDeal", () => {
       productUrl: "https://seller.example/product",
       reactions: { views: 1000, likes: 12 }
     });
+  });
+
+  it("keeps local development on the file store unless cloud storage is explicitly enabled", () => {
+    delete process.env.VERCEL;
+    delete process.env.USE_CLOUD_STORE;
+    process.env.BLOB_READ_WRITE_TOKEN = "available-but-disabled";
+    process.env.KV_REST_API_URL = "https://redis.example";
+    process.env.KV_REST_API_TOKEN = "available-but-disabled";
+
+    expect(storageBackend()).toBe("local_file");
+  });
+
+  it("allows an explicitly enabled local worker to use the configured cloud store", () => {
+    delete process.env.VERCEL;
+    process.env.USE_CLOUD_STORE = "1";
+    process.env.BLOB_READ_WRITE_TOKEN = "enabled";
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+
+    expect(storageBackend()).toBe("vercel_blob");
   });
 
   it("counts compacted and legacy clicks during migration", () => {

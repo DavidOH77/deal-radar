@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "수집 관리 | 딜레이더", robot
 
 export default async function StatusPage() {
   if (!(await hasAdminSession())) redirect("/admin/login");
-  const data = await loadDealsData();
+  const data = await loadDealsData({ scope: "archive" });
   return (
     <AppShell>
       <section className="page-heading">

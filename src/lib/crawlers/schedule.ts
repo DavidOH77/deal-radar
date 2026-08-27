@@ -24,3 +24,9 @@ export function isCrawlDue(runs: CrawlRun[], now = Date.now()): boolean {
   if (!latest) return true;
   return new Date(latest.finishedAt).getTime() <= now - crawlIntervalMs();
 }
+
+export function isRequestCrawlEnabled(
+  env: { NODE_ENV?: string; ENABLE_REQUEST_CRAWL?: string } = process.env
+): boolean {
+  return env.NODE_ENV !== "production" || env.ENABLE_REQUEST_CRAWL === "1";
+}

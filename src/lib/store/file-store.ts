@@ -48,7 +48,8 @@ function usesRedisStore(): boolean {
 }
 
 function usesBlobStore(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+  const cloudStoreEnabled = Boolean(process.env.VERCEL || process.env.USE_CLOUD_STORE === "1");
+  return cloudStoreEnabled && Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
 function redis(): Redis {

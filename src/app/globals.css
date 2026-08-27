@@ -404,6 +404,32 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-size: 12px;
   font-weight: 500;
 }
+.deal-list-footer {
+  min-height: 64px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+.deal-list-footer button {
+  height: 40px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  font-size: 12px;
+  font-weight: 500;
+}
+.deal-list-footer button:hover { background: var(--surface-subtle); }
 
 .interest-panel, .source-panel { padding-bottom: 40px; }
 .quality-panel { padding-bottom: 28px; }

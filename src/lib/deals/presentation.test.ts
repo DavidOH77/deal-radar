@@ -57,6 +57,12 @@ describe("deal presentation", () => {
     expect(displayCategory({ title: "파나소닉 헤어드라이어와 고데기 세트", category: "뷰티" })).toBe("가전");
   });
 
+  it("avoids incidental noun collisions found in the live feed", () => {
+    expect(displayCategory({ title: "오끼뜨 하말넘많 떡과사전 반팔티", category: "세일정보" })).toBe("패션");
+    expect(displayCategory({ title: "도량 철가방요리사 임태훈 셰프 짜장면 짬뽕 택2", category: "먹거리" })).toBe("식품");
+    expect(displayCategory({ title: "아스토니쉬 클리너 1+1+1", category: "기타국내" })).toBe("생활");
+  });
+
   it("does not expose a community source as a seller fallback", () => {
     expect(presentDeal(deal({ title: "현미밥 24개 16,400원" })).seller).toBeUndefined();
   });

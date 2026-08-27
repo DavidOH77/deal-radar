@@ -36,6 +36,56 @@ describe("source parsers", () => {
     });
   });
 
+  it("enriches Algumon JSON-LD with seller, price, and shipping from the public card", () => {
+    const html = `
+      <article class="deal-feed-card">
+        <a class="badge" href="/n/deal?keyword=G%EB%A7%88%EC%BC%93">G마켓</a>
+        <span class="badge">뽐뿌</span>
+        <a href="/n/d/1030216">산지직송 고당도 샤인머스켓 2kg 3~4수</a>
+        <p class="deal-price-text">12,880원 (2 x 6,440원)</p>
+        <span>배송 무료</span>
+        <a href="/n/deal/1030216">공유</a>
+      </article>
+      <script type="application/ld+json">${JSON.stringify({
+        mainEntity: {
+          itemListElement: [{
+            item: {
+              name: "산지직송 고당도 샤인머스켓 2kg 3~4수",
+              url: "https://www.algumon.com/n/deal/1030216",
+              dateCreated: "2026-08-28T01:14:12+09:00"
+            }
+          }]
+        }
+      })}</script>`;
+
+    expect(parseAlgumon(html, collectedAt)[0]).toMatchObject({
+      title: "[G마켓] 산지직송 고당도 샤인머스켓 2kg 3~4수",
+      dealPrice: { amount: 12_880 },
+      freeShipping: true
+    });
+  });
+
+  it("parses paid Algumon shipping without mixing it into the deal price", () => {
+    const html = `
+      <article class="deal-feed-card">
+        <a class="badge">11번가</a>
+        <p class="deal-price-text">9,900원</p>
+        <span>배송 3,000원</span>
+        <a href="/n/deal/1030300">공유</a>
+      </article>
+      <script type="application/ld+json">${JSON.stringify({
+        mainEntity: { itemListElement: [{ item: {
+          name: "테스트 상품",
+          url: "https://www.algumon.com/n/deal/1030300"
+        } }] }
+      })}</script>`;
+
+    expect(parseAlgumon(html, collectedAt)[0]).toMatchObject({
+      dealPrice: { amount: 9_900 },
+      shippingPrice: { amount: 3_000 }
+    });
+  });
+
   it("parses Eomisae cards without profile metrics leaking in", () => {
     const html = `
       <div class="card_el">

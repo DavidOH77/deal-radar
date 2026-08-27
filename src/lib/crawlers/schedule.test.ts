@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { SOURCE_IDS, type CrawlRun } from "@/lib/deals/types";
-import { isCrawlDue, isFullCrawlRun, latestCompletedFullRun } from "./schedule";
+import { isCrawlDue, isFullCrawlRun, isRequestCrawlEnabled, latestCompletedFullRun } from "./schedule";
 
 const originalInterval = process.env.CRAWL_INTERVAL_MINUTES;
 
@@ -43,5 +43,11 @@ describe("crawl schedule", () => {
     expect(isFullCrawlRun(partial)).toBe(false);
     expect(latestCompletedFullRun([partial, full])?.id).toBe("full");
     expect(isCrawlDue([partial, full], Date.parse("2026-08-24T00:30:00.000Z"))).toBe(true);
+  });
+
+  it("keeps public production reads separate from crawling unless explicitly enabled", () => {
+    expect(isRequestCrawlEnabled({ NODE_ENV: "production" })).toBe(false);
+    expect(isRequestCrawlEnabled({ NODE_ENV: "production", ENABLE_REQUEST_CRAWL: "1" })).toBe(true);
+    expect(isRequestCrawlEnabled({ NODE_ENV: "development" })).toBe(true);
   });
 });

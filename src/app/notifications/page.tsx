@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const initialData = await loadDealsData();
+  const initialData = await loadDealsData({ scope: "archive" });
   return (
     <AppShell>
       <NotificationExplorer initialData={initialData} />
