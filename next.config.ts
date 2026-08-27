@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   agentRules: false,
   allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
+  output: "standalone",
   turbopack: {
     root: process.cwd()
   },

@@ -9,13 +9,12 @@
   <array>
     <string>/usr/bin/caffeinate</string>
     <string>-s</string>
-    <string>/opt/homebrew/bin/npm</string>
-    <string>run</string>
-    <string>start</string>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/ohyeseong/Library/Application Support/DealRadar/runtime/server.js</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/ohyeseong/Documents/핫딜 소싱기</string>
+  <string>/Users/ohyeseong/Library/Application Support/DealRadar/runtime</string>
 
   <key>EnvironmentVariables</key>
   <dict>
@@ -26,6 +25,8 @@
     <key>ENABLE_LOCAL_SCHEDULER</key>
     <string>1</string>
     <key>USE_CLOUD_STORE</key>
+    <string>1</string>
+    <key>NODE_DISABLE_COMPILE_CACHE</key>
     <string>1</string>
   </dict>
 

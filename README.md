@@ -135,7 +135,7 @@ npm run build
 ./scripts/install-macos-service.sh
 ```
 
-서비스는 `127.0.0.1:3000`에서 실행되고 `ENABLE_LOCAL_SCHEDULER=1`로 시간당 수집을 유지합니다. `USE_CLOUD_STORE=1`이 설정되어 수집 결과는 배포 사이트와 같은 Redis에 저장됩니다. AC 전원 연결 중에는 `caffeinate -s`가 시스템 잠자기를 막습니다. 화면 잠금은 가능하며 배터리 사용 중에는 macOS 전원 설정에 따라 잠들 수 있습니다.
+설치 스크립트는 standalone 런타임을 `~/Library/Application Support/DealRadar`에 복사합니다. 서비스는 `127.0.0.1:3000`에서 실행되고 `ENABLE_LOCAL_SCHEDULER=1`로 시간당 수집을 유지합니다. `USE_CLOUD_STORE=1`이 설정되어 수집 결과는 배포 사이트와 같은 Redis에 저장됩니다. AC 전원 연결 중에는 `caffeinate -s`가 시스템 잠자기를 막습니다. 화면 잠금은 가능하며 배터리 사용 중에는 macOS 전원 설정에 따라 잠들 수 있습니다. 새 코드를 적용할 때는 다시 빌드한 뒤 설치 스크립트를 실행합니다.
 
 ```bash
 launchctl print gui/$(id -u)/com.dealradar.server
