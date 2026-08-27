@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   agentRules: false,
   allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
-  output: "standalone",
+  ...(process.env.VERCEL === "1" ? {} : { output: "standalone" as const }),
   turbopack: {
     root: process.cwd()
   },
