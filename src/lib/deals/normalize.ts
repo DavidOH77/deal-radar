@@ -3,7 +3,7 @@ import type { RawDeal, SourceId } from "./types";
 
 const PROMO_WORDS = /\b(핫딜|특가|최저가|단독|오늘만|무료배송|쿠폰|카드할인)\b/gi;
 const SPACE = /\s+/g;
-const ENDED_TITLE_PREFIX = /^[\s❌️🚫⛔]*(?:종료(?:됨|완료)?|품절(?!\s*풀림)|마감(?:됨|완료)?|라이브\s*끝)(?=$|[\s:;!?.~)\]】❌️🚫⛔])/i;
+const ENDED_TITLE_PREFIX = /^[\s\[\]xX❌️🚫⛔]*(?:종료(?:됨|완료)?|품절(?!\s*풀림)|마감(?:됨|완료)?|라이브\s*끝)(?=$|[\s:;!?.~)\]】❌️🚫⛔])/i;
 const ENDED_TITLE_SUFFIX = /(?:쿠폰\s*)?(?:소진|판매\s*종료|행사\s*종료|종료(?:됨|완료)?|품절|마감(?:됨|완료)?)[\s❌️🚫⛔!?.~)\]】]*$/i;
 const DECORATED_ENDED_MARKER = /[❌🚫⛔]\ufe0f?\s*(?:소진|종료|품절|마감)\s*[❌🚫⛔]/i;
 

@@ -6,6 +6,8 @@ import { isCrawlDue, isRequestCrawlEnabled, latestCompletedFullRun } from "@/lib
 import { clickCount, readStore } from "@/lib/store/file-store";
 import { logEvent, operationalError } from "@/lib/server/log";
 import { selectFeedDeals } from "@/lib/deals/feed";
+import { parseRequestedDealIds } from "@/lib/deals/query";
+import { canViewAdminData } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,11 +27,24 @@ export async function GET(request: Request) {
     );
   }
   const requestedSources = sourceValues as SourceId[];
+  const requestedIds = parseRequestedDealIds(url.searchParams);
+  if (!requestedIds) {
+    return NextResponse.json(
+      { ok: false, error: "invalid_ids", requestId: id },
+      { status: 400, headers: { "x-request-id": id, "cache-control": "no-store" } }
+    );
+  }
   const scope = url.searchParams.get("scope") ?? "feed";
   if (scope !== "feed" && scope !== "archive") {
     return NextResponse.json(
       { ok: false, error: "invalid_scope", requestId: id },
       { status: 400, headers: { "x-request-id": id, "cache-control": "no-store" } }
+    );
+  }
+  if (scope === "archive" && !requestedIds.length && !canViewAdminData(request)) {
+    return NextResponse.json(
+      { ok: false, error: "archive_requires_admin_or_ids", requestId: id },
+      { status: 401, headers: { "x-request-id": id, "cache-control": "no-store" } }
     );
   }
   const refresh = url.searchParams.get("refresh") === "1" && process.env.NODE_ENV !== "production";
@@ -51,10 +66,13 @@ export async function GET(request: Request) {
     const sourceDeals = requestedSources.length
       ? store.deals.filter((deal) => requestedSources.includes(deal.source))
       : store.deals;
+    const targetedDeals = requestedIds.length
+      ? sourceDeals.filter((deal) => requestedIds.includes(deal.id))
+      : sourceDeals;
     const asOf = new Date().toISOString();
     const deals = scope === "feed"
-      ? selectFeedDeals(sourceDeals, { now: new Date(asOf).getTime() })
-      : sourceDeals;
+      ? selectFeedDeals(targetedDeals, { now: new Date(asOf).getTime() })
+      : targetedDeals;
     const cacheControl = refresh ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300";
 
     return NextResponse.json({

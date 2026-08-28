@@ -148,7 +148,8 @@ Vercel Hobby 플랜은 하루 1회보다 잦은 크론을 허용하지 않으므
 ## API
 
 - `GET /api/deals`: 최근 48시간의 고신호 딜 최대 600건과 최신 소스 상태
-- `GET /api/deals?scope=archive`: 저장소의 전체 보존 딜 반환
+- `GET /api/deals?scope=archive&id={dealId}`: 저장·알림 화면에 필요한 보존 딜만 반환(요청당 최대 50개)
+- `GET /api/deals?scope=archive`: 인증된 관리자만 전체 보존 딜 반환
 - `GET /api/deals?refresh=1`: 개발 환경에서 즉시 수집 후 반환
 - `POST /api/crawl`: 수집 실행, 운영 환경은 `Authorization: Bearer $CRON_SECRET` 필요
 - `GET /api/cron/crawl`: 인증된 스케줄러가 호출하는 전체 수집 경로

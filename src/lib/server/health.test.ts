@@ -59,7 +59,14 @@ describe("backendHealth", () => {
       status: "ready",
       storage: { backend: "local_file", ready: true },
       crawl: { ageMinutes: 30, stale: false },
-      sources: { healthy: SOURCE_IDS.length, failed: 0, total: SOURCE_IDS.length, successRate: 100 },
+      sources: {
+        healthy: SOURCE_IDS.length,
+        failed: 0,
+        setupRequired: 0,
+        configured: SOURCE_IDS.length,
+        total: SOURCE_IDS.length,
+        successRate: 100
+      },
       data: {
         deals: 1,
         pricedDeals: 1,
@@ -86,6 +93,43 @@ describe("backendHealth", () => {
       data: { missingImageDeals: 0, missingImageRate: 0 }
     });
     expect(JSON.stringify(health)).not.toContain(SOURCE_IDS[0]);
+  });
+
+  it("reports unconfigured connectors separately without masking collector health", () => {
+    delete process.env.VERCEL;
+    const value = store("2026-08-23T23:30:00.000Z");
+    value.runs[0].sources.slice(6).forEach((source) => {
+      source.status = "needs_credentials";
+    });
+
+    const health = backendHealth(value, Date.parse("2026-08-24T00:00:00.000Z"));
+
+    expect(health).toMatchObject({
+      ok: true,
+      status: "ready",
+      sources: {
+        healthy: 6,
+        failed: 0,
+        setupRequired: SOURCE_IDS.length - 6,
+        configured: 6,
+        total: SOURCE_IDS.length,
+        successRate: 100
+      }
+    });
+  });
+
+  it("stays degraded when no collector is configured", () => {
+    delete process.env.VERCEL;
+    const value = store("2026-08-23T23:30:00.000Z");
+    value.runs[0].sources.forEach((source) => {
+      source.status = "needs_credentials";
+    });
+
+    expect(backendHealth(value, Date.parse("2026-08-24T00:00:00.000Z"))).toMatchObject({
+      ok: true,
+      status: "degraded",
+      sources: { healthy: 0, failed: 0, setupRequired: SOURCE_IDS.length, configured: 0, successRate: 0 }
+    });
   });
 
   it("fails health when a production store is not configured", () => {

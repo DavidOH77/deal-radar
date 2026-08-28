@@ -14,6 +14,7 @@ function makeDeal(
     views?: number;
     price?: number;
     productUrl?: string;
+    expiresAt?: string;
   } = {}
 ): Deal {
   const title = options.title ?? `상품 ${id}`;
@@ -28,6 +29,7 @@ function makeDeal(
     productUrl: options.productUrl,
     category: "기타",
     publishedAt: new Date(publishedAt).toISOString(),
+    expiresAt: options.expiresAt,
     dealPrice: options.price ? { amount: options.price, currency: "KRW" } : undefined,
     reactions: {
       likes: options.likes,
@@ -73,5 +75,17 @@ describe("selectFeedDeals", () => {
 
     expect(selected).toHaveLength(1);
     expect(selected[0].id).toBe("complete");
+  });
+
+  it("excludes expired and explicitly ended deals from the public feed", () => {
+    const active = makeDeal("active", NOW - 60_000, { title: "판매 중인 상품" });
+    const soldOut = makeDeal("sold-out", NOW - 60_000, { title: "XXX품절!! 판매 종료 상품" });
+    const expired = makeDeal("expired", NOW - 60_000, {
+      expiresAt: new Date(NOW - 1).toISOString()
+    });
+    const restocked = makeDeal("restocked", NOW - 60_000, { title: "품절풀림 재입고 상품" });
+
+    expect(selectFeedDeals([active, soldOut, expired, restocked], { now: NOW }).map((deal) => deal.id))
+      .toEqual(["active", "restocked"]);
   });
 });

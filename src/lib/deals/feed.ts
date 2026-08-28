@@ -1,4 +1,5 @@
 import { dedupeDealsForDisplay } from "./quality";
+import { isExplicitlyEndedTitle } from "./normalize";
 import { calculateDisplayRankingScore } from "./scoring";
 import type { Deal } from "./types";
 
@@ -45,9 +46,12 @@ export function selectFeedDeals(
   const cutoff = now - windowHours * HOUR_MS;
   const freshDeals = deals.filter((deal) => {
     const publishedAt = publishedAtTime(deal);
+    const expiresAt = deal.expiresAt ? new Date(deal.expiresAt).getTime() : undefined;
     return Number.isFinite(publishedAt)
       && publishedAt >= cutoff
-      && publishedAt <= now + FUTURE_TOLERANCE_MS;
+      && publishedAt <= now + FUTURE_TOLERANCE_MS
+      && !isExplicitlyEndedTitle(deal.title)
+      && (!expiresAt || expiresAt > now);
   });
 
   const compareHot = hotComparison(now);

@@ -6,6 +6,7 @@ import { countAlertMatches } from "@/lib/deals/preferences";
 import { calculateDisplayRankingScore } from "@/lib/deals/scoring";
 import { InterestPanel } from "./interest-panel";
 import { useDealPreferences } from "./use-deal-preferences";
+import { useRelevantDeals } from "./use-relevant-deals";
 
 export function SavedExplorer({ initialData }: { initialData: DealsResponse }) {
   const {
@@ -16,14 +17,15 @@ export function SavedExplorer({ initialData }: { initialData: DealsResponse }) {
     toggleAlert,
     toggleSaved
   } = useDealPreferences(initialData.deals);
+  const relevantDeals = useRelevantDeals(initialData, savedDealIds);
 
   const savedDeals = useMemo(() => {
     const saved = new Set(savedDealIds);
     const rankingTime = new Date(initialData.asOf).getTime();
-    return initialData.deals
+    return relevantDeals
       .filter((deal) => saved.has(deal.id))
       .sort((a, b) => calculateDisplayRankingScore(b, rankingTime) - calculateDisplayRankingScore(a, rankingTime));
-  }, [initialData.asOf, initialData.deals, savedDealIds]);
+  }, [initialData.asOf, relevantDeals, savedDealIds]);
 
   const matchCount = useMemo(
     () => countAlertMatches(initialData.deals, alerts),

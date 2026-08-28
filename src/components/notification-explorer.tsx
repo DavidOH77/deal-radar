@@ -7,6 +7,7 @@ import { relativeTime } from "@/lib/deals/presentation";
 import { dealDetailPath } from "@/lib/deals/routing";
 import { MaterialIcon } from "./material-icon";
 import { useDealPreferences } from "./use-deal-preferences";
+import { useRelevantDeals } from "./use-relevant-deals";
 
 export function NotificationExplorer({ initialData }: { initialData: DealsResponse }) {
   const {
@@ -14,7 +15,8 @@ export function NotificationExplorer({ initialData }: { initialData: DealsRespon
     markAllNotificationsRead,
     markNotificationRead
   } = useDealPreferences(initialData.deals);
-  const dealMap = useMemo(() => new Map(initialData.deals.map((deal) => [deal.id, deal])), [initialData.deals]);
+  const relevantDeals = useRelevantDeals(initialData, notifications.map((notification) => notification.dealId));
+  const dealMap = useMemo(() => new Map(relevantDeals.map((deal) => [deal.id, deal])), [relevantDeals]);
   const visible = notifications.filter((notification) => dealMap.has(notification.dealId));
   const unread = visible.filter((notification) => !notification.read).length;
 
