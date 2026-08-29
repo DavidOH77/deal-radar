@@ -77,6 +77,25 @@ describe("selectFeedDeals", () => {
     expect(selected[0].id).toBe("complete");
   });
 
+  it("deduplicates cross-source promo variants of the same product", () => {
+    const community = makeDeal("community", NOW - 60_000, {
+      title: "[네이버]메가MGC커피 (ICE)아메리카노 (1,550원/무료)",
+      likes: 4,
+      price: 1_550
+    });
+    const aggregator = makeDeal("aggregator", NOW - 120_000, {
+      title: "(event) 메가MGC커피 (ICE)아메리카노 1,550원",
+      likes: 33,
+      price: 1_550
+    });
+    aggregator.source = "eomisae";
+
+    const selected = selectFeedDeals([community, aggregator], { now: NOW });
+
+    expect(selected).toHaveLength(1);
+    expect(selected[0].id).toBe("aggregator");
+  });
+
   it("excludes expired and explicitly ended deals from the public feed", () => {
     const active = makeDeal("active", NOW - 60_000, { title: "판매 중인 상품" });
     const soldOut = makeDeal("sold-out", NOW - 60_000, { title: "XXX품절!! 판매 종료 상품" });

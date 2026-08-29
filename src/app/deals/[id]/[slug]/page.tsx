@@ -7,7 +7,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { PriceHistory } from "@/components/price-history";
 import { ShareButton } from "@/components/share-button";
 import { SOURCE_LABELS, formatMetric, presentDeal, relativeTime } from "@/lib/deals/presentation";
-import { productTitleKey } from "@/lib/deals/quality";
+import { relatedDealsForDisplay } from "@/lib/deals/quality";
 import { dealDetailPath } from "@/lib/deals/routing";
 import { trendReason } from "@/lib/deals/trend";
 import { readStore } from "@/lib/store/file-store";
@@ -47,10 +47,9 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
   if (!deal) notFound();
 
   const presented = presentDeal(deal);
-  const key = productTitleKey(deal);
-  const related = store.deals.filter((item) => item.id !== deal.id && productTitleKey(item) === key);
-  const snapshots = store.priceSnapshots.filter((snapshot) => snapshot.canonicalKey === deal.canonicalKey);
   const now = new Date().toISOString();
+  const related = relatedDealsForDisplay(deal, store.deals, new Date(now).getTime());
+  const snapshots = store.priceSnapshots.filter((snapshot) => snapshot.canonicalKey === deal.canonicalKey);
   const rising = trendReason(deal.trend);
   const jsonLd = {
     "@context": "https://schema.org",

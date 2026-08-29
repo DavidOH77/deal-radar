@@ -61,6 +61,10 @@ describe("deal presentation", () => {
     expect(displayCategory({ title: "오끼뜨 하말넘많 떡과사전 반팔티", category: "세일정보" })).toBe("패션");
     expect(displayCategory({ title: "도량 철가방요리사 임태훈 셰프 짜장면 짬뽕 택2", category: "먹거리" })).toBe("식품");
     expect(displayCategory({ title: "아스토니쉬 클리너 1+1+1", category: "기타국내" })).toBe("생활");
+    expect(displayCategory({ title: "스투시 미공홈 준야 콜라보", category: "패션해외" })).toBe("패션");
+    expect(displayCategory({ title: "얌 크림단팥빵 12입", category: "식품/건강" })).toBe("식품");
+    expect(displayCategory({ title: "잘풀리는집 보습로션 미용티슈", category: "생활용품" })).toBe("생활");
+    expect(displayCategory({ title: "Hamster 키링", category: "뷰티" })).toBe("패션");
   });
 
   it("does not expose a community source as a seller fallback", () => {
