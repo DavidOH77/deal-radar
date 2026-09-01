@@ -52,6 +52,8 @@ function cleanProductTitle(value: string): string {
     .replace(/\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[~–-]\s*\d+(?:,\d{3})*(?:\.\d+)?)?\s*(?:만\s*)?원(?![가-힣])/gi, " ")
     .replace(/(?:무료배송|무배)/gi, " ")
     .replace(/\s*(?:[-–·|/]\s*)?(?:\d{1,3}(?:,\d{3})+|\d{4,})\s*원(?:\s*(?:무료배송|무배))?\s*$/i, "")
+    .replace(/\(\s*이상[^)]*\)/gi, " ")
+    .replace(/\(\s*\)|\[\s*\]/g, " ")
     .replace(/\s*[([]\s*\.{2,}\s*$/g, "")
     .replace(/\s+/g, " ")
     .replace(/[·,\-\s]+$/, "")

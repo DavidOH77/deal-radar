@@ -289,6 +289,25 @@ function hydrate(raw: RawDeal, snapshots: PriceSnapshot[], trend?: Deal["trend"]
   };
 }
 
+export function repairStoredDealPrice(deal: Deal): Deal {
+  const normalized = normalizeRawDeal(deal);
+  if (normalized.dealPrice?.amount === deal.dealPrice?.amount) return deal;
+
+  const baseline: Deal["baseline"] = {
+    kind: "unknown",
+    confidence: "unknown",
+    sampleSize: 0,
+    label: "기준가 수집 중"
+  };
+  return {
+    ...deal,
+    ...normalized,
+    baseline,
+    score: scoreDeal(normalized, baseline),
+    unitPriceLabel: inferUnitPrice(normalized.title, normalized.dealPrice?.amount)
+  };
+}
+
 export function mergeRawDeal(previous: Deal | undefined, raw: RawDeal): RawDeal {
   if (!previous) return raw;
   return {
@@ -318,6 +337,7 @@ export async function readStore(): Promise<CrawlStore> {
   return {
     ...store,
     deals: store.deals
+      .map(repairStoredDealPrice)
       .filter((deal) => isDisplayableDeal(deal, now))
       .sort((a, b) => calculateDisplayRankingScore(b, now) - calculateDisplayRankingScore(a, now))
   };

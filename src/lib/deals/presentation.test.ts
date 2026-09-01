@@ -94,4 +94,12 @@ describe("deal presentation", () => {
     expect(presentDeal(deal({ title: "사발면 6개 8980원 재입고 쿠팡" })).title).toBe("사발면 6개 재입고 쿠팡");
     expect(presentDeal(deal({ title: "트라이 드로즈 5장 7870원, 8400원 무배" })).title).toBe("트라이 드로즈 5장");
   });
+
+  it("removes empty punctuation left after extracting a trailing price", () => {
+    expect(presentDeal(deal({ title: "[지마켓] 컬쳐랜드 5만원권 (46,500원) (무료)" })).title)
+      .toBe("컬쳐랜드 5만원권");
+    expect(presentDeal(deal({
+      title: "[지마켓] 누룽제비 10,920원/투움바 파스타 10,300원(2만원 이상 카드 10% 추가할인) (10,920원)"
+    })).title).toBe("누룽제비 /투움바 파스타");
+  });
 });

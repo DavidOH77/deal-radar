@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isExplicitlyEndedTitle, parsePriceFromTitle } from "./normalize";
+import { isExplicitlyEndedTitle, normalizeRawDeal, parsePriceFromTitle } from "./normalize";
 
 describe("parsePriceFromTitle", () => {
   it("parses community prices written immediately after parentheses", () => {
@@ -8,6 +8,37 @@ describe("parsePriceFromTitle", () => {
 
   it("parses compact ten-thousand-won notation", () => {
     expect(parsePriceFromTitle("운동화 9.6만원")).toBe(96_000);
+  });
+
+  it("prefers the trailing sale price over a gift-card denomination", () => {
+    expect(parsePriceFromTitle("[지마켓] 컬쳐랜드 5만원권 (46,500원) (무료)")).toBe(46_500);
+  });
+
+  it("does not confuse shipping, conditional prices, or product specs with the sale price", () => {
+    expect(parsePriceFromTitle("키보드형 계산기 (5,000원) (유료3,000원)")).toBe(5_000);
+    expect(parsePriceFromTitle("백진미채 (14,900원(첫구매시 12,665원)/무료)")).toBe(14_900);
+    expect(parsePriceFromTitle("400만화소 홈캠 (45,012원/무료)")).toBe(45_012);
+    expect(parsePriceFromTitle("12,880원 (2 x 6,440원)")).toBe(12_880);
+  });
+
+  it("keeps an explicitly labelled discount price ahead of a trailing comparison price", () => {
+    expect(parsePriceFromTitle("외장하드 할인가25.9만 (278,490원/무배)")).toBe(259_000);
+  });
+
+  it("repairs a previously inferred community price from the structured suffix", () => {
+    const normalized = normalizeRawDeal({
+      source: "fmkorea",
+      sourceMode: "public_page",
+      sourceDealId: "1",
+      title: "[지마켓] 컬쳐랜드 5만원권 (46,500원) (무료)",
+      sourceUrl: "https://example.com/deal",
+      publishedAt: "2026-09-01T00:00:00.000Z",
+      collectedAt: "2026-09-01T00:00:00.000Z",
+      dealPrice: { amount: 50_000, currency: "KRW" },
+      reactions: {}
+    });
+
+    expect(normalized.dealPrice?.amount).toBe(46_500);
   });
 });
 

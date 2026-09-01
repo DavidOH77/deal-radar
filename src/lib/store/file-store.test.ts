@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { CrawlStore, Deal, RawDeal } from "@/lib/deals/types";
-import { clickCount, crawlRunStatus, isCrawlLeaseActive, isDisplayableDeal, mergeRawDeal, storageBackend } from "./file-store";
+import {
+  clickCount,
+  crawlRunStatus,
+  isCrawlLeaseActive,
+  isDisplayableDeal,
+  mergeRawDeal,
+  repairStoredDealPrice,
+  storageBackend
+} from "./file-store";
 
 const storageEnvironment = [
   "VERCEL",
@@ -55,6 +63,24 @@ describe("mergeRawDeal", () => {
       productUrl: "https://seller.example/product",
       reactions: { views: 1000, likes: 12 }
     });
+  });
+
+  it("repairs a stored title-derived price without retaining an invalid baseline", () => {
+    const repaired = repairStoredDealPrice({
+      ...raw,
+      title: "[지마켓] 컬쳐랜드 5만원권 (46,500원) (무료)",
+      dealPrice: { amount: 50_000, currency: "KRW" },
+      id: "fmkorea_123",
+      canonicalKey: "key",
+      normalizedTitle: "title",
+      baseline: { amount: 50_000, kind: "history_90d", confidence: "high", sampleSize: 4, label: "최근 기준가" },
+      score: { total: 80, price: 90, reaction: 50, trust: 70, urgency: 60, tier: "A" },
+      outboundUrl: "/go/fmkorea_123"
+    });
+
+    expect(repaired.dealPrice?.amount).toBe(46_500);
+    expect(repaired.baseline).toMatchObject({ kind: "unknown", confidence: "unknown", sampleSize: 0 });
+    expect(repaired.score.discountRate).toBeUndefined();
   });
 
   it("keeps local development on the file store unless cloud storage is explicitly enabled", () => {

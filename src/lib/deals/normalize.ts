@@ -6,6 +6,7 @@ const SPACE = /\s+/g;
 const ENDED_TITLE_PREFIX = /^[\s\[\]xX❌️🚫⛔]*(?:종료(?:됨|완료)?|품절(?!\s*풀림)|마감(?:됨|완료)?|라이브\s*끝)(?=$|[\s:;!?.~)\]】❌️🚫⛔])/i;
 const ENDED_TITLE_SUFFIX = /(?:쿠폰\s*)?(?:소진|판매\s*종료|행사\s*종료|종료(?:됨|완료)?|품절|마감(?:됨|완료)?)[\s❌️🚫⛔!?.~)\]】]*$/i;
 const DECORATED_ENDED_MARKER = /[❌🚫⛔]\ufe0f?\s*(?:소진|종료|품절|마감)\s*[❌🚫⛔]/i;
+const TITLE_DERIVED_PRICE_SOURCES = new Set<SourceId>(["eomisae", "womencity", "fmkorea", "ppomppu"]);
 
 export function normalizeTitle(title: string): string {
   return title
@@ -36,13 +37,34 @@ export function dealId(source: SourceId, sourceDealId: string): string {
   return `${source}_${sourceDealId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 }
 
-export function parsePriceFromTitle(title: string): number | undefined {
-  const manwon = title.match(/(\d+(?:\.\d+)?)\s*만\s*원?/);
+function parseMoneyText(value: string): number | undefined {
+  const manwon = value.match(/(\d+(?:\.\d+)?)\s*만(?:\s*원|(?![가-힣]))/);
   if (manwon) return Math.round(Number(manwon[1]) * 10_000);
 
-  const won = title.match(/(\d{1,3}(?:,\d{3})+|\d{4,})\s*원/);
+  const won = value.match(/(\d{1,3}(?:,\d{3})+|\d{4,})\s*원/);
   if (!won) return undefined;
   return Number(won[1].replaceAll(",", ""));
+}
+
+function labelledPriceFromTitle(title: string): number | undefined {
+  const labels = [...title.matchAll(/(?:최종가?|판매가|딜가|할인가|쿠폰가)\s*[:：]?\s*((?:\d+(?:\.\d+)?\s*만(?:\s*원|(?![가-힣])))|(?:\d{1,3}(?:,\d{3})+|\d{4,})\s*원)/gi)];
+  return labels.length ? parseMoneyText(labels.at(-1)?.[1] ?? "") : undefined;
+}
+
+function structuredPriceFromTitle(title: string): number | undefined {
+  const groups = [...title.matchAll(/[([]\s*([^()[\]]+)\s*[)\]]/g)];
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const value = groups[index][1];
+    if (/(?:배송|유료|착불|첫\s*구매|신규|카드|적립|체감)/i.test(value)
+      || /\d+\s*[x×]\s*\d/i.test(value)) continue;
+    const amount = parseMoneyText(value);
+    if (amount) return amount;
+  }
+  return undefined;
+}
+
+export function parsePriceFromTitle(title: string): number | undefined {
+  return labelledPriceFromTitle(title) ?? structuredPriceFromTitle(title) ?? parseMoneyText(title);
 }
 
 export function inferCategory(raw: Pick<RawDeal, "title" | "category">): string {
@@ -67,7 +89,10 @@ export function inferUnitPrice(title: string, price?: number): string | undefine
 }
 
 export function normalizeRawDeal(raw: RawDeal): RawDeal {
-  const parsedPrice = raw.dealPrice?.amount ?? parsePriceFromTitle(raw.title);
+  const preferredTitlePrice = labelledPriceFromTitle(raw.title) ?? structuredPriceFromTitle(raw.title);
+  const parsedPrice = TITLE_DERIVED_PRICE_SOURCES.has(raw.source) && preferredTitlePrice
+    ? preferredTitlePrice
+    : raw.dealPrice?.amount ?? parsePriceFromTitle(raw.title);
   return {
     ...raw,
     title: raw.title.replace(SPACE, " ").trim(),
