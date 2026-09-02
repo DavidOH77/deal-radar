@@ -73,16 +73,26 @@ export async function GET(request: Request) {
     const deals = scope === "feed"
       ? selectFeedDeals(targetedDeals, { now: new Date(asOf).getTime() })
       : targetedDeals;
-    const cacheControl = refresh ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300";
+    const lastRun = latestCompletedFullRun(store.runs) ?? null;
+    const adminArchive = scope === "archive" && requestedIds.length === 0;
+    const cacheControl = refresh || scope === "archive"
+      ? "private, no-store"
+      : "public, s-maxage=60, stale-while-revalidate=300";
 
-    return NextResponse.json({
+    const publicResponse = {
       deals,
-      sources: latestSourceHealth(store.runs),
-      lastRun: latestCompletedFullRun(store.runs) ?? null,
-      clickCount: clickCount(store),
+      lastRun: lastRun ? { finishedAt: lastRun.finishedAt } : null,
       asOf,
       requestId: id
-    }, { headers: { "x-request-id": id, "cache-control": cacheControl } });
+    };
+    const response = adminArchive ? {
+      ...publicResponse,
+      sources: latestSourceHealth(store.runs),
+      lastRun,
+      clickCount: clickCount(store)
+    } : publicResponse;
+
+    return NextResponse.json(response, { headers: { "x-request-id": id, "cache-control": cacheControl } });
   } catch (error) {
     logEvent("error", "deals_api_failed", { requestId: id, error: operationalError(error) });
     return NextResponse.json(
