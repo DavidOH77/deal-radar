@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectFeedDeals } from "./feed";
+import { compareRecommendations, selectFeedDeals } from "./feed";
 import type { Deal } from "./types";
 
 const NOW = new Date("2026-08-28T00:00:00.000Z").getTime();
@@ -106,5 +106,29 @@ describe("selectFeedDeals", () => {
 
     expect(selectFeedDeals([active, soldOut, expired, restocked], { now: NOW }).map((deal) => deal.id))
       .toEqual(["active", "restocked"]);
+  });
+});
+
+describe("compareRecommendations", () => {
+  it("sorts only by recommendation count before tie breakers", () => {
+    const moreRecommended = makeDeal("more-recommended", NOW - 2 * 60 * 60 * 1_000, {
+      likes: 10
+    });
+    const moreViewed = makeDeal("more-viewed", NOW - 60 * 60 * 1_000, {
+      likes: 9,
+      comments: 500,
+      views: 100_000
+    });
+
+    expect([moreViewed, moreRecommended].sort(compareRecommendations).map((deal) => deal.id))
+      .toEqual(["more-recommended", "more-viewed"]);
+  });
+
+  it("uses recency when recommendation counts are equal", () => {
+    const older = makeDeal("older", NOW - 2 * 60 * 60 * 1_000, { likes: 10 });
+    const newer = makeDeal("newer", NOW - 60 * 60 * 1_000, { likes: 10 });
+
+    expect([older, newer].sort(compareRecommendations).map((deal) => deal.id))
+      .toEqual(["newer", "older"]);
   });
 });

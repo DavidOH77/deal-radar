@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DealsResponse } from "@/lib/deals/contracts";
-import { reactionSignal } from "@/lib/deals/feed";
+import { compareRecommendations } from "@/lib/deals/feed";
 import { DISPLAY_CATEGORIES, displayCategory, relativeTime } from "@/lib/deals/presentation";
 import { dedupeDealsForDisplay } from "@/lib/deals/quality";
 import { calculateDisplayRankingScore, explainRanking } from "@/lib/deals/scoring";
@@ -10,11 +10,11 @@ import { DealCard } from "./deal-card";
 import { MaterialIcon } from "./material-icon";
 import { useDealPreferences } from "./use-deal-preferences";
 
-type Sort = "hot" | "reaction" | "new";
+type Sort = "hot" | "recommendation" | "new";
 
 const SORTS: Array<{ id: Sort; label: string }> = [
   { id: "hot", label: "인기순" },
-  { id: "reaction", label: "반응순" },
+  { id: "recommendation", label: "추천순" },
   { id: "new", label: "최신순" }
 ];
 
@@ -74,7 +74,7 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
     });
 
     const sorted = filtered.sort((a, b) => {
-      if (sort === "reaction") return reactionSignal(b) - reactionSignal(a);
+      if (sort === "recommendation") return compareRecommendations(a, b);
       if (sort === "new") return b.publishedAt.localeCompare(a.publishedAt);
       return calculateDisplayRankingScore(b, rankingTime) - calculateDisplayRankingScore(a, rankingTime) ||
         b.score.total - a.score.total ||

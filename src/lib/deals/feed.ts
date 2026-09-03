@@ -22,6 +22,12 @@ export function reactionSignal(deal: Pick<Deal, "reactions">): number {
     + Math.min(8, (deal.reactions.views ?? 0) / 1_000);
 }
 
+export function compareRecommendations(a: Deal, b: Deal): number {
+  return (b.reactions.likes ?? 0) - (a.reactions.likes ?? 0)
+    || b.publishedAt.localeCompare(a.publishedAt)
+    || b.score.total - a.score.total;
+}
+
 function publishedAtTime(deal: Pick<Deal, "publishedAt">): number {
   return new Date(deal.publishedAt).getTime();
 }
