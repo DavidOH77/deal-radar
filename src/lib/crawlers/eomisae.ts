@@ -1,14 +1,42 @@
 import * as cheerio from "cheerio";
+import { isListingPlaceholderTitle } from "@/lib/deals/normalize";
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
 import { absoluteUrl, fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
 
 const SOURCE_URL = "https://eomisae.co.kr/fs";
+const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
+const MAX_THUMBNAIL_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 function parseShortDate(value: string, fallback: string): string {
   const match = value.match(/(\d{2})\.(\d{2})\.(\d{2})/);
   if (!match) return fallback;
   return new Date(`20${match[1]}-${match[2]}-${match[3]}T12:00:00+09:00`).toISOString();
+}
+
+function koreaShortDate(time: number): string {
+  const date = new Date(time + KOREA_OFFSET_MS);
+  const year = String(date.getUTCFullYear()).slice(-2);
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}.${month}.${day}`;
+}
+
+function parsePublishedAt(dateText: string, rawImage: string | undefined, fallback: string): string {
+  const fallbackTime = new Date(fallback).getTime();
+  try {
+    const value = rawImage ? new URL(rawImage, SOURCE_URL).searchParams.get("t") : undefined;
+    const numeric = Number(value);
+    const timestamp = numeric < 10_000_000_000 ? numeric * 1_000 : numeric;
+    const plausible = Number.isFinite(timestamp)
+      && Number.isFinite(fallbackTime)
+      && timestamp <= fallbackTime + 15 * 60 * 1_000
+      && timestamp >= fallbackTime - MAX_THUMBNAIL_AGE_MS;
+    if (plausible && koreaShortDate(timestamp) === dateText) return new Date(timestamp).toISOString();
+  } catch {
+    // Keep the date-only fallback when the cache-buster is malformed.
+  }
+  return parseShortDate(dateText, fallback);
 }
 
 export function parseEomisae(html: string, collectedAt = new Date().toISOString()): RawDeal[] {
@@ -21,7 +49,7 @@ export function parseEomisae(html: string, collectedAt = new Date().toISOString(
     const title = card.find("h3 a").text().replace(/\s+/g, " ").trim();
     const sourceDealId = link?.match(/\/fs\/(\d+)/)?.[1];
     if (!link || !title || !sourceDealId) return;
-    if (title.toLowerCase() === "list_adsense" || link.includes("/adlink_")) return;
+    if (isListingPlaceholderTitle(title) || link.includes("/adlink_")) return;
 
     const info = card.find(".infos");
     const metric = (iconClass: string) => {
@@ -45,7 +73,7 @@ export function parseEomisae(html: string, collectedAt = new Date().toISOString(
       sourceUrl: absoluteUrl(link, SOURCE_URL) ?? `${SOURCE_URL}/${sourceDealId}`,
       imageUrl,
       category,
-      publishedAt: parseShortDate(dateText, collectedAt),
+      publishedAt: parsePublishedAt(dateText, rawImage, collectedAt),
       reactions: {
         views: metric("ion-ios-eye"),
         comments: metric("ion-ios-chatbubble"),

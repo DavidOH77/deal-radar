@@ -141,6 +141,7 @@ describe("mergeRawDeal", () => {
     expect(isDisplayableDeal({ ...raw, title: "❌️라이브 끝❌️ 한우 특가" }, now)).toBe(false);
     expect(isDisplayableDeal({ ...raw, title: "네이버 푸드페스타 선착순 ❌️소진❌️" }, now)).toBe(false);
     expect(isDisplayableDeal({ ...raw, title: "Re: 페이코도됨" }, now)).toBe(false);
+    expect(isDisplayableDeal({ ...raw, title: "list_ad_link" }, now)).toBe(false);
     expect(isDisplayableDeal({ ...raw, expiresAt: "2026-08-23T01:59:59.000Z" }, now)).toBe(false);
     expect(isDisplayableDeal({ ...raw, title: "품절풀림 베트남 그린망고 1,490원" }, now)).toBe(true);
     expect(isDisplayableDeal(raw, now)).toBe(true);

@@ -18,6 +18,10 @@ export function normalizeTitle(title: string): string {
     .toLowerCase();
 }
 
+export function isListingPlaceholderTitle(title: string): boolean {
+  return /^list[_\s-]*ad(?:sense|[_\s-]*link)?$/i.test(title.normalize("NFKC").trim());
+}
+
 export function isExplicitlyEndedTitle(title: string): boolean {
   const normalized = title.normalize("NFKC").trim();
   return ENDED_TITLE_PREFIX.test(normalized)

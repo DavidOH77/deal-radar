@@ -108,11 +108,45 @@ describe("source parsers", () => {
     });
   });
 
+  it("uses the Eomisae thumbnail timestamp when it matches the listed date", () => {
+    const html = `
+      <div class="card_el">
+        <img class="tmb" src="//img.eomisae.co.kr/files/thumbnails/951/748/200/190x190.crop.jpg?t=1788530791" />
+        <div class="card_content">
+          <p><span class="cate">패션국내,</span><span>26.09.04</span></p>
+          <h3><a href="/fs/200748951">DTHIRTYONE 크루넥 스웨트셔츠</a></h3>
+        </div>
+        <a class="hx" href="/fs/200748951">read</a>
+      </div>`;
+
+    expect(parseEomisae(html, "2026-09-04T17:36:22.728Z")[0].publishedAt)
+      .toBe("2026-09-04T14:06:31.000Z");
+  });
+
+  it("falls back to the listed Eomisae date when the thumbnail timestamp is inconsistent", () => {
+    const html = `
+      <div class="card_el">
+        <img class="tmb" src="//img.eomisae.co.kr/files/thumbnails/example.jpg?t=1788530791" />
+        <div class="card_content">
+          <p><span class="cate">패션국내,</span><span>26.09.03</span></p>
+          <h3><a href="/fs/200748952">테스트 상품</a></h3>
+        </div>
+        <a class="hx" href="/fs/200748952">read</a>
+      </div>`;
+
+    expect(parseEomisae(html, "2026-09-04T17:36:22.728Z")[0].publishedAt)
+      .toBe("2026-09-03T03:00:00.000Z");
+  });
+
   it("ignores Eomisae ad placeholder cards", () => {
     const html = `
       <div class="card_el">
         <h3><a href="/fs/199000001">list_adsense</a></h3>
         <a class="hx" href="/fs/199000001">read</a>
+      </div>
+      <div class="card_el">
+        <h3><a href="/fs/199000002">list_ad_link</a></h3>
+        <a class="hx" href="/fs/199000002">read</a>
       </div>`;
     expect(parseEomisae(html, collectedAt)).toEqual([]);
   });

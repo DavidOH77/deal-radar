@@ -15,7 +15,7 @@ import type {
   PriceSnapshot,
   RawDeal
 } from "@/lib/deals/types";
-import { canonicalKey, dealId, inferUnitPrice, isExplicitlyEndedTitle, normalizeRawDeal, normalizeTitle } from "@/lib/deals/normalize";
+import { canonicalKey, dealId, inferUnitPrice, isExplicitlyEndedTitle, isListingPlaceholderTitle, normalizeRawDeal, normalizeTitle } from "@/lib/deals/normalize";
 import { calculateBaseline, calculateDisplayRankingScore, scoreDeal } from "@/lib/deals/scoring";
 import { calculateDealTrend } from "@/lib/deals/trend";
 
@@ -90,7 +90,7 @@ export function isDisplayableDeal(
   now = Date.now()
 ): boolean {
   const title = normalizeTitle(deal.title);
-  if (!title || title === "list_adsense" || /^re\s*:/i.test(title) || deal.sourceUrl.includes("/adlink_") || isExplicitlyEndedTitle(deal.title)) return false;
+  if (!title || isListingPlaceholderTitle(deal.title) || /^re\s*:/i.test(title) || deal.sourceUrl.includes("/adlink_") || isExplicitlyEndedTitle(deal.title)) return false;
   if (deal.expiresAt && new Date(deal.expiresAt).getTime() <= now) return false;
   return new Date(deal.publishedAt).getTime() >= now - PUBLISHED_RETENTION_MS;
 }
