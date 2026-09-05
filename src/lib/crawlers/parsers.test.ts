@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseAlgumon } from "./algumon";
 import { parseElevenstXml } from "./elevenst";
-import { parseEomisae } from "./eomisae";
+import { completeEomisaeTitle, parseEomisae, parseEomisaeDetail } from "./eomisae";
 import { parseFmkoreaBest, parseFmkoreaDetail } from "./fmkorea";
 import { parseNaverShopping } from "./naver";
 import { parsePpomppu } from "./ppomppu";
@@ -149,6 +149,23 @@ describe("source parsers", () => {
         <a class="hx" href="/fs/199000002">read</a>
       </div>`;
     expect(parseEomisae(html, collectedAt)).toEqual([]);
+  });
+
+  it("parses the complete Eomisae title from a public detail page", () => {
+    const html = `
+      <meta property="og:title" content="불스원 그라스 블루 차량용방향제 100ml, 1+1, 16,900원 - 인기정보 - 어미새" />`;
+
+    expect(parseEomisaeDetail(html))
+      .toBe("불스원 그라스 블루 차량용방향제 100ml, 1+1, 16,900원");
+    expect(completeEomisaeTitle(
+      "불스원 그라스 블루 차량용방향제 100ml, 1+1, 16...",
+      parseEomisaeDetail(html)
+    )).toBe("불스원 그라스 블루 차량용방향제 100ml, 1+1, 16,900원");
+  });
+
+  it("keeps the listed Eomisae title when detail content does not match", () => {
+    expect(completeEomisaeTitle("불스원 차량용방향제 16...", "다른 상품 16,900원"))
+      .toBe("불스원 차량용방향제 16...");
   });
 
   it("parses 11st official product-search XML", () => {

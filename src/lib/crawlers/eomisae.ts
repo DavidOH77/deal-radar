@@ -7,6 +7,65 @@ import { errorMessage, sourceResult } from "./result";
 const SOURCE_URL = "https://eomisae.co.kr/fs";
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
 const MAX_THUMBNAIL_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
+const DETAIL_REQUEST_INTERVAL_MS = 5_000;
+const MAX_DETAIL_TITLE_REQUESTS = 6;
+
+function normalizedText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function isTruncatedTitle(value: string): boolean {
+  return /(?:\.\.\.|…)$/.test(value.trim());
+}
+
+export function parseEomisaeDetail(html: string): string | undefined {
+  const $ = cheerio.load(html);
+  const headingTitle = normalizedText($(".rd_hd h2 a.pjax").first().text());
+  const metaTitle = normalizedText($("meta[property='og:title']").attr("content") ?? "")
+    .replace(/\s+-\s+(?:인기정보|패션정보|기타정보|래플정보|이벤트정보)\s+-\s+어미새$/, "");
+  const title = headingTitle || metaTitle;
+  return title && !isListingPlaceholderTitle(title) ? title : undefined;
+}
+
+export function completeEomisaeTitle(listingTitle: string, detailTitle: string | undefined): string {
+  const listingStem = listingTitle.replace(/(?:\.\.\.|…)$/, "").trim();
+  return detailTitle && !isTruncatedTitle(detailTitle) && detailTitle.startsWith(listingStem)
+    ? detailTitle
+    : listingTitle;
+}
+
+async function waitForDetailRequest(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, DETAIL_REQUEST_INTERVAL_MS));
+}
+
+async function enrichTruncatedTitles(deals: RawDeal[]): Promise<RawDeal[]> {
+  const enriched: RawDeal[] = [];
+  let detailRequests = 0;
+
+  for (const deal of deals) {
+    if (!isTruncatedTitle(deal.title) || detailRequests >= MAX_DETAIL_TITLE_REQUESTS) {
+      enriched.push(deal);
+      continue;
+    }
+
+    await waitForDetailRequest();
+    detailRequests += 1;
+    try {
+      const response = await fetchWithPolicy(deal.sourceUrl);
+      if (!response.ok) {
+        enriched.push(deal);
+        continue;
+      }
+      const detailTitle = parseEomisaeDetail(await response.text());
+      const title = completeEomisaeTitle(deal.title, detailTitle);
+      enriched.push(title === deal.title ? deal : { ...deal, title });
+    } catch {
+      enriched.push(deal);
+    }
+  }
+
+  return enriched;
+}
 
 function parseShortDate(value: string, fallback: string): string {
   const match = value.match(/(\d{2})\.(\d{2})\.(\d{2})/);
@@ -94,7 +153,8 @@ export const eomisaeConnector: SourceConnector = {
     try {
       const response = await fetchWithPolicy(SOURCE_URL);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const deals = parseEomisae(await response.text());
+      const listedDeals = parseEomisae(await response.text());
+      const deals = await enrichTruncatedTitles(listedDeals);
       return sourceResult({
         source: this.id,
         mode: this.mode,
