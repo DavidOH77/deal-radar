@@ -99,6 +99,9 @@ describe("deal presentation", () => {
     expect(presentDeal(deal({ title: "[지마켓] 컬쳐랜드 5만원권 (46,500원) (무료)" })).title)
       .toBe("컬쳐랜드 5만원권");
     expect(presentDeal(deal({
+      title: "[농심몰]신라면 40개 1박스(21,826원/무료) 적립금 반영 개당 500원꼴"
+    })).title).toBe("신라면 40개 1박스 적립금 반영 개당 500원꼴");
+    expect(presentDeal(deal({
       title: "[지마켓] 누룽제비 10,920원/투움바 파스타 10,300원(2만원 이상 카드 10% 추가할인) (10,920원)"
     })).title).toBe("누룽제비 /투움바 파스타");
   });
