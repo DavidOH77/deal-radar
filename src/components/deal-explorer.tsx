@@ -13,7 +13,7 @@ import { useDealPreferences } from "./use-deal-preferences";
 type Sort = "hot" | "recommendation" | "new";
 
 const SORTS: Array<{ id: Sort; label: string }> = [
-  { id: "hot", label: "인기순" },
+  { id: "hot", label: "핫순" },
   { id: "recommendation", label: "추천순" },
   { id: "new", label: "최신순" }
 ];
@@ -83,8 +83,6 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
     return dedupeDealsForDisplay(sorted, rankingTime);
   }, [category, data.asOf, data.deals, query, sort]);
   const renderedDeals = visibleDeals.slice(0, visibleLimit);
-  const featuredDeal = renderedDeals[0]?.dealPrice?.amount ? renderedDeals[0] : undefined;
-  const compactDeals = featuredDeal ? renderedDeals.slice(1) : renderedDeals;
   const remainingDeals = Math.max(0, visibleDeals.length - renderedDeals.length);
 
   const freshness = data.lastRun
@@ -94,8 +92,14 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
   return (
     <>
       <section className="overview">
-        <h1>지금 뜨는 딜</h1>
-        <span className="freshness"><i aria-hidden="true" />{freshness}</span>
+        <div>
+          <p className="eyebrow">LIVE RANKING</p>
+          <h1>지금 반응이 오르는 딜</h1>
+        </div>
+        <p className="feed-summary">
+          <strong>{visibleDeals.length.toLocaleString("ko-KR")}개</strong>
+          <span>최근 48시간 · {freshness}</span>
+        </p>
       </section>
 
       <section className="filter-panel" aria-label="핫딜 필터">
@@ -121,28 +125,22 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
             ) : null}
           </label>
 
-          <label className="select-wrap">
-            <span className="sr-only">카테고리</span>
-            <select value={category} onChange={(event) => {
-              setCategory(event.target.value);
-              setVisibleLimit(INITIAL_VISIBLE_DEALS);
-            }} aria-label="카테고리">
-              <option>전체</option>
-              {DISPLAY_CATEGORIES.map((value) => <option key={value}>{value}</option>)}
-            </select>
-            <MaterialIcon name="expand_more" size={18} />
-          </label>
-
-          <label className="select-wrap sort-select">
-            <span className="sr-only">정렬</span>
-            <select value={sort} onChange={(event) => {
-              setSort(event.target.value as Sort);
-              setVisibleLimit(INITIAL_VISIBLE_DEALS);
-            }} aria-label="정렬">
-              {SORTS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
-            </select>
-            <MaterialIcon name="expand_more" size={18} />
-          </label>
+          <div className="sort-segmented" role="group" aria-label="정렬">
+            {SORTS.map(({ id, label }) => (
+              <button
+                key={id}
+                className={sort === id ? "is-selected" : ""}
+                type="button"
+                aria-pressed={sort === id}
+                onClick={() => {
+                  setSort(id);
+                  setVisibleLimit(INITIAL_VISIBLE_DEALS);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
           <button
             className="icon-button refresh-button"
@@ -154,35 +152,51 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
             <MaterialIcon name="refresh" size={19} className={loading ? "spin" : ""} />
           </button>
         </div>
-
+        <nav className="category-strip" aria-label="카테고리">
+          {["전체", ...DISPLAY_CATEGORIES].map((value) => (
+            <button
+              key={value}
+              className={category === value ? "is-selected" : ""}
+              type="button"
+              aria-current={category === value ? "true" : undefined}
+              onClick={() => {
+                setCategory(value);
+                setVisibleLimit(INITIAL_VISIBLE_DEALS);
+              }}
+            >
+              {value}
+            </button>
+          ))}
+        </nav>
       </section>
 
       {error ? <div className="error-banner" role="alert">업데이트하지 못했습니다. {error}</div> : null}
 
+      {visibleDeals.length ? (
+        <div className="ledger-columns" aria-hidden="true">
+          <span>순위</span>
+          <span>상품</span>
+          <span>구매가</span>
+          <span>지금 반응</span>
+          <span />
+        </div>
+      ) : null}
       <div className="deal-grid" aria-live="polite">
-        {featuredDeal ? (
-          <DealCard
-            key={featuredDeal.id}
-            deal={featuredDeal}
-            referenceTime={data.asOf}
-            eager
-            rank={1}
-            featured
-            reason={explainRanking(featuredDeal, visibleDeals, new Date(data.asOf).getTime())}
-            saved={savedDealIds.includes(featuredDeal.id)}
-            onToggleSaved={toggleSaved}
-          />
-        ) : null}
-        {compactDeals.map((deal, index) => (
-          <DealCard
-            key={deal.id}
-            deal={deal}
-            referenceTime={data.asOf}
-            rank={index + (featuredDeal ? 2 : 1)}
-            saved={savedDealIds.includes(deal.id)}
-            onToggleSaved={toggleSaved}
-          />
-        ))}
+        {renderedDeals.map((deal, index) => {
+          const rank = index + 1;
+          return (
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              referenceTime={data.asOf}
+              eager={index < 3}
+              rank={rank}
+              reason={rank <= 3 || deal.trend?.rising ? explainRanking(deal, visibleDeals, new Date(data.asOf).getTime()) : undefined}
+              saved={savedDealIds.includes(deal.id)}
+              onToggleSaved={toggleSaved}
+            />
+          );
+        })}
         {!visibleDeals.length ? (
           <div className="empty-state">
             <MaterialIcon name="search_off" size={24} />

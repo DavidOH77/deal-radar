@@ -1,92 +1,83 @@
-# 딜레이더 디자인 시스템
+# SPIKE 디자인 시스템
+
+> 구현 기준: A / Signal Ledger + A / Align
+> 승인일: 2026-09-07
 
 ## 경험 원칙
 
-1. 가격과 반응을 조작 UI보다 먼저 보여준다.
-2. 순위는 크기와 정렬로 강조하고 장식색으로 경쟁시키지 않는다.
-3. 표면은 하나로 유지하고 간격과 구분선으로 정보를 묶는다.
-4. 색상은 상태를 설명할 때만 사용한다.
-5. 반복해서 보는 화면답게 빠른 비교와 스캔을 우선한다.
+1. 상품명, 구매가, 추천 반응을 같은 읽기 순서로 반복한다.
+2. 추천을 주 신호로, 조회는 보조 신호로만 표시한다.
+3. 목록 전체만 하나의 surface로 취급하고 행마다 카드를 만들지 않는다.
+4. 검증되지 않은 할인율과 기준가는 숨긴다.
+5. 행 클릭은 판매처 이동, 정보와 저장 아이콘만 별도 행동을 소유한다.
 
 ## Foundation
 
-### Color
-
-| Token | Value | Role |
-| --- | --- | --- |
-| `canvas` | `#F5F6F8` | 콘텐츠 바깥 배경 |
-| `surface` | `#FFFFFF` | 기본 제품 표면 |
-| `surface-muted` | `#F3F4F6` | 검색과 선택 상태 |
-| `text-primary` | `#202124` | 제목, 가격, 활성 상태 |
-| `text-secondary` | `#69707A` | 메타데이터 |
-| `text-tertiary` | `#9298A1` | 보조 설명 |
-| `stroke-subtle` | `#E5E7EB` | 행과 주요 영역 구분 |
-| `success` | `#23856D` | 검증 완료와 정상 상태 |
-| `danger` | `#C94B46` | 오류 상태에만 사용 |
-
-제품 UI와 브랜드에는 장식용 색상을 사용하지 않는다. 전경, 배경, 외곽선 역할을 섞지 않는다.
-
-### Typography
+~~~css
+:root {
+  --canvas: #ffffff;
+  --surface: #ffffff;
+  --surface-subtle: #f4f5f6;
+  --surface-hover: #f8f9fa;
+  --text-primary: #17191d;
+  --text-secondary: #626973;
+  --text-tertiary: #9299a3;
+  --border: rgb(23 25 29 / 9%);
+  --border-strong: rgb(23 25 29 / 15%);
+  --accent: #3d5ce8;
+  --hot: #e85b48;
+  --success: #21835f;
+  --danger: #d84f45;
+  --focus: #3659f5;
+  --radius-control: 8px;
+  --radius-media: 8px;
+  --radius-surface: 12px;
+  --radius-pill: 999px;
+}
+~~~
 
 - Font: Pretendard Variable
-- Page title: 28/38, 650
-- Section title: 18/26, 600
-- Deal title: 16/24, 550
-- Featured price: 24/32, 650
-- Row price: 16/24, 600
-- Body: 14/21, 500
-- Metadata: 12/18, 400~500
-- 숫자는 tabular lining number를 사용한다.
+- 본문 14/21, 상품명 15/22, 가격 15/22, 메타데이터 11~12/17
+- 기본 weight는 400, 상품명과 label은 500, 선택과 주요 가격만 600
+- 모든 letter spacing은 0, 가격과 반응 숫자만 tabular numerals
+- control 8px, image 8px, list surface 12px, category chip만 pill
+- 그림자는 segmented control의 선택 상태 외에는 사용하지 않는다.
 
-### Layout
+## Signal Ledger
 
-- Desktop content width: 최대 1488px
-- Desktop grid: 12 columns, 24px gutter
-- Mobile horizontal padding: 16px
-- Breakpoint: 760px
-- Touch target: 최소 40x40px
-- Spacing scale: 4, 8, 12, 16, 20, 24, 32, 40px
+### Desktop
 
-### Shape And Separation
+rank 36 | image 76 | product flexible | purchase 132 | reaction 150 | actions 72
 
-- SearchField radius: 14px
-- Primary action radius: 12px
-- Media radius: 10px
-- Clear icon button은 평상시 표면이 없고 hover/pressed 상태만 원형 표면을 사용한다.
-- 페이지 밴드와 목록 행은 0px radius를 사용한다.
-- 일반 버튼과 목록에는 pill radius를 사용하지 않는다.
-- 목록 행은 카드로 감싸지 않고 `#E5E7EB` 1px 구분선만 사용한다.
-- 그림자와 그라디언트를 사용하지 않는다.
+- row 최소 102px, padding 12px 16px, gap 16px
+- 제목 최대 2줄
+- 추천 수를 반응 열의 첫 줄에 표시
+- 상위 3개 또는 실제 반응 증가가 있는 행에만 선정 이유 표시
 
-### Interaction
+### Mobile
 
-- Hover: 해당 행 또는 선택 항목에 `surface-muted` 사용
-- Focus: 2px `text-primary` outline, 2px offset
-- Pressed: 배경 명도 한 단계 감소
-- Selected: 굵기, 짧은 underline 또는 neutral fill 중 하나만 사용
-- Disabled: opacity 0.4, pointer feedback 제거
-- Loading: 회색 표면의 opacity pulse, 색상 이동 없음
+rank 22 | image 84 | product flexible | actions 32
 
-## Core Components
+- row 최소 132px
+- 제목 최대 3줄
+- 가격은 제목과 같은 14px
+- 가격과 배송, 추천과 댓글 및 조회 순으로 세로 재배치
+- 하단 navigation은 랭킹, 관심딜, 알림만 노출
 
-### Ranked Deal
+## Brand Assets
 
-- Rank 1: 중간 크기 이미지, 제목, 가격, 반응, 저장, 판매처 행동을 한 행에서 제공한다.
-- Rank 2+: 순위+이미지, 상품 맥락, 가격+행동의 세 영역으로 구성한다.
-- 반응 지표는 별도 열이 아니라 상품 제목 아래의 보조 정보로 제공한다.
-- 검증 점수 숫자는 노출하지 않고 기준가 근거 상태만 의미 색상으로 제공한다.
-- Mobile: 가격과 행동을 상품 정보 아래로 이동한다.
+- Header/App mark: public/brand/spike-align.svg
+- Monochrome mark: public/brand/spike-align-mono.svg
+- Browser icon: src/app/icon.svg
+- 3D object: public/brand/spike-align-object-v1.png
+- 3D object는 빈 상태와 공유 자산에만 사용하며 딜 행이나 배경 장식으로 반복하지 않는다.
 
-### Filter Bar
+## 상태와 접근성
 
-- 검색은 채워진 neutral surface로 표시한다.
-- 카테고리와 정렬은 borderless menu control을 사용한다.
-- 소스 선택은 text tab과 짧은 underline을 사용한다.
-- 가격 확인은 작은 성공 아이콘과 텍스트로만 표현한다.
-
-### Brand
-
-- 대표 브랜드는 얇은 이중 슬래시 심벌과 Pretendard 텍스트 워드마크를 사용한다.
-- 가격표, 레이더, 장바구니처럼 서비스를 직역한 심벌은 사용하지 않는다.
-- 심벌은 단색 graphite 투명 PNG이며 20~22px로 표시한다.
-- 워드마크는 Pretendard 700과 `text-primary`를 사용한다.
+- 가격 없음: 빈 가격 열을 유지하고 가격 확인 문구를 반복하지 않는다.
+- 이미지 없음: neutral surface와 image_not_supported 아이콘
+- 수집 오류: 기존 목록은 유지하고 오류 banner와 재시도 제공
+- focus: 2px focus token, 2px offset
+- 최소 터치 영역 32px, 주요 control 40px
+- 390px에서 가로 overflow가 없어야 하며 제목 3줄을 보장한다.
+- prefers-reduced-motion에서는 회전 외 전환을 즉시 완료한다.

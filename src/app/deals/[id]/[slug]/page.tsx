@@ -12,6 +12,7 @@ import { dealDetailPath } from "@/lib/deals/routing";
 import { trendReason } from "@/lib/deals/trend";
 import { readStore } from "@/lib/store/file-store";
 import { siteUrl } from "@/lib/site-url";
+import { BRAND } from "@/lib/brand";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,11 +25,11 @@ async function dealById(id: string) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }): Promise<Metadata> {
   const { id } = await params;
   const { deal } = await dealById(id);
-  if (!deal) return { title: "딜을 찾을 수 없습니다 | 딜레이더" };
+  if (!deal) return { title: `딜을 찾을 수 없습니다 | ${BRAND.name}` };
   const presented = presentDeal(deal);
   const canonical = new URL(dealDetailPath(deal), siteUrl()).toString();
   return {
-    title: `${presented.title} | 딜레이더`,
+    title: `${presented.title} | ${BRAND.name}`,
     description: `${SOURCE_LABELS[deal.source]} 반응과 현재 수집 가격을 확인하세요.`,
     alternates: { canonical },
     openGraph: {

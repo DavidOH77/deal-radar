@@ -48,6 +48,14 @@ describe("isExplicitlyEndedTitle", () => {
     expect(isExplicitlyEndedTitle("[품절] 무선 이어폰")).toBe(true);
   });
 
+  it("detects a decorated standalone end marker", () => {
+    expect(isExplicitlyEndedTitle("❌️끝❌️제니쿠키 640g / 2믹스")).toBe(true);
+  });
+
+  it("extracts prices prefixed by a won symbol", () => {
+    expect(parsePriceFromTitle("청정원 파스타소스 600g 3개 + 면 500g / ￦7,060")).toBe(7_060);
+  });
+
   it("keeps restocked deals and promotions whose coupon alone ended", () => {
     expect(isExplicitlyEndedTitle("품절풀림 베트남 그린망고 1,490원")).toBe(false);
     expect(isExplicitlyEndedTitle("망고 라방 쿠폰마감 가격 동일 5,490원")).toBe(false);

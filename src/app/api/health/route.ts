@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requestId } from "@/lib/crawlers/run";
 import { backendHealth } from "@/lib/server/health";
 import { logEvent, operationalError } from "@/lib/server/log";
+import { releaseMetadata } from "@/lib/server/release";
 import { readStore, storageBackend } from "@/lib/store/file-store";
 
 export const runtime = "nodejs";
@@ -10,9 +11,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const id = requestId();
   const headers = { "x-request-id": id, "cache-control": "no-store" };
+  const release = releaseMetadata();
   try {
     const health = backendHealth(await readStore());
-    return NextResponse.json({ ...health, checkedAt: new Date().toISOString(), requestId: id }, {
+    return NextResponse.json({ ...health, release, checkedAt: new Date().toISOString(), requestId: id }, {
       status: health.ok ? 200 : 503,
       headers
     });
@@ -22,6 +24,7 @@ export async function GET() {
       ok: false,
       status: "storage_unavailable",
       storage: { backend: storageBackend(), ready: false },
+      release,
       checkedAt: new Date().toISOString(),
       requestId: id
     }, { status: 503, headers });

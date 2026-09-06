@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { MaterialIcon } from "@/components/material-icon";
@@ -7,7 +8,7 @@ import { loginAdmin } from "../actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "관리자 로그인 | 딜레이더", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: `관리자 로그인 | ${BRAND.name}`, robots: { index: false, follow: false } };
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid: "아이디 또는 비밀번호를 확인하세요.",

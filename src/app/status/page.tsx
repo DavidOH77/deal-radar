@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 import { redirect } from "next/navigation";
 import { logoutAdmin } from "@/app/admin/actions";
 import { AffiliateStatusPanel } from "@/components/affiliate-status-panel";
@@ -12,7 +13,7 @@ import { hasAdminSession } from "@/lib/server/admin-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "수집 관리 | 딜레이더", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: `수집 관리 | ${BRAND.name}`, robots: { index: false, follow: false } };
 
 export default async function StatusPage() {
   if (!(await hasAdminSession())) redirect("/admin/login");

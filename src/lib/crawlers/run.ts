@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { shadowWriteSourceObservations } from "@/lib/application/ingest/shadow-write";
 import type { CrawlLease, CrawlRun, CrawlTrigger, SourceId } from "@/lib/deals/types";
+import { logEvent, operationalError } from "@/lib/server/log";
 import {
   acquireCrawlLease,
   releaseCrawlLease,
@@ -43,11 +45,30 @@ export function runCrawl(
 
     try {
       const results = await collectSources(sourceIds);
-      return await saveCrawlResults(results, startedAt, {
+      const run = await saveCrawlResults(results, startedAt, {
         id,
         trigger,
         requestId: options.requestId
       });
+      try {
+        const shadow = await shadowWriteSourceObservations(
+          results.flatMap((result) => result.deals),
+          id
+        );
+        if (shadow.status === "written") {
+          logEvent("info", "domain_observation_shadow_write", {
+            crawlRunId: id,
+            attempted: shadow.attempted,
+            inserted: shadow.inserted
+          });
+        }
+      } catch (shadowError) {
+        logEvent("warn", "domain_observation_shadow_write_failed", {
+          crawlRunId: id,
+          error: operationalError(shadowError)
+        });
+      }
+      return run;
     } catch (error) {
       try {
         await saveFailedCrawlRun({
@@ -58,7 +79,10 @@ export function runCrawl(
           error: failureMessage(error)
         });
       } catch (persistenceError) {
-        console.error("Failed to persist crawl failure", persistenceError);
+        logEvent("error", "crawl_failure_persistence_failed", {
+          crawlRunId: id,
+          error: operationalError(persistenceError)
+        });
         await releaseCrawlLease(id).catch(() => undefined);
       }
       throw error;

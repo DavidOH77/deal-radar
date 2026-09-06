@@ -1,6 +1,6 @@
-# 딜레이더 MVP
+# SPIKE
 
-알구몬, 어미새, 덬딜, 여성시대, 에펨코리아, 뽐뿌, 퀘이사존과 네이버쇼핑, 11번가, 쿠팡, G마켓, 옥션, SSG, 올리브영의 딜 후보를 한 형식으로 수집하고 가격 이력과 반응 지표로 핫딜을 검증하는 Next.js 앱입니다.
+여러 커뮤니티와 판매처에서 지금 추천이 오르는 상품을 한 형식으로 모으고, 가격 이력과 반응 근거를 분리해 보여주는 Next.js 서비스입니다. 공개 서비스명은 SPIKE이며 기존 deal-radar 식별자는 저장 키와 운영 경로 호환을 위해 유지합니다.
 
 ## 실행
 
@@ -90,6 +90,26 @@ AFFILIATE_11ST_TEMPLATE=https://affiliate.example/deeplink?media={id}&url={url}
 - 동일 상품 가격을 최소 24시간에 걸쳐 3회 수집하면 90일 중앙가를 사용합니다.
 - 7일 이상에 걸친 8회 이상 관측은 높은 신뢰도로 승격합니다.
 - 가격 근거가 없으면 커뮤니티 반응이 높아도 `관찰` 상태를 유지합니다.
+
+## Postgres 관측 모델
+
+기존 Redis 읽기 경로를 유지하면서 새 수집 관측을 Postgres에 함께 쌓을 수 있습니다. 먼저 연결된 개발 DB에서 migration을 실행한 뒤 shadow write를 켭니다.
+
+```bash
+DATABASE_URL=... npm run db:migrate
+```
+
+```dotenv
+DATABASE_URL=postgresql://...
+DEAL_DOMAIN_SHADOW_WRITE=1
+```
+
+- source_posts는 커뮤니티 게시물 identity와 최신 공개 필드를 보관합니다.
+- source_post_observations는 수집 시점별 가격과 반응을 append-only로 보관합니다.
+- idempotency key로 같은 관측 재처리를 무시합니다.
+- shadow-write 장애는 현재 Redis 피드를 중단시키지 않으며 구조화 로그로 남깁니다.
+- 상품 identity와 offer 테이블은 관측 품질을 측정한 뒤 다음 migration으로 추가합니다.
+- `/api/health`의 `release` 필드에서 배포 commit, 환경, migration 버전, Postgres 연결 및 shadow-write 활성 여부를 확인할 수 있습니다. 연결 문자열은 노출하지 않습니다.
 
 ## 실시간 랭킹
 

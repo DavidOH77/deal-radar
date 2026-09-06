@@ -15,7 +15,7 @@ export function MaterialIcon({
 }) {
   return (
     <span
-      className={`material-symbols-rounded${filled ? " is-filled" : ""}${className ? ` ${className}` : ""}`}
+      className={`material-symbols-outlined${filled ? " is-filled" : ""}${className ? ` ${className}` : ""}`}
       style={{ fontSize: size } as CSSProperties}
       aria-hidden={label ? undefined : true}
       aria-label={label}

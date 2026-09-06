@@ -58,6 +58,10 @@ describe("deal presentation", () => {
   });
 
   it("avoids incidental noun collisions found in the live feed", () => {
+    expect(displayCategory({
+      title: "추가구매 가능. 구운감자 18개, 청정원 스파게티소스 600g 3개",
+      category: "홈/리빙"
+    })).toBe("식품");
     expect(displayCategory({ title: "오끼뜨 하말넘많 떡과사전 반팔티", category: "세일정보" })).toBe("패션");
     expect(displayCategory({ title: "도량 철가방요리사 임태훈 셰프 짜장면 짬뽕 택2", category: "먹거리" })).toBe("식품");
     expect(displayCategory({ title: "아스토니쉬 클리너 1+1+1", category: "기타국내" })).toBe("생활");
@@ -87,6 +91,16 @@ describe("deal presentation", () => {
   it("removes a trailing won price from the displayed product name", () => {
     expect(presentDeal(deal({ title: "뿌리는 락스세제 500ml 4개 9900원" })).title)
       .toBe("뿌리는 락스세제 500ml 4개");
+  });
+
+  it("removes a trailing won-symbol price and favors product nouns over a noisy category", () => {
+    expect(presentDeal(deal({
+      title: "청정원 파스타소스 600g 3개 + 면 500g / ￦7,060",
+      category: "홈/리빙"
+    }))).toMatchObject({
+      category: "식품",
+      title: "청정원 파스타소스 600g 3개 + 면 500g"
+    });
   });
 
   it("removes price ranges and inline price tokens from the displayed title", () => {

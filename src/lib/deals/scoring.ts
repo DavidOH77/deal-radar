@@ -9,16 +9,14 @@ const confidenceWeight: Record<Confidence, number> = {
 };
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
-const FRESHNESS_GRACE_HOURS = 18;
-const POST_GRACE_HALF_LIFE_HOURS = 8;
+export const HOT_RANKING_HALF_LIFE_HOURS = 6;
 
 function ageInHours(publishedAt: string, now: number): number {
   return Math.max(0, (now - new Date(publishedAt).getTime()) / 3_600_000);
 }
 
-function postGraceFreshness(ageHours: number): number {
-  const hoursPastGrace = Math.max(0, ageHours - FRESHNESS_GRACE_HOURS);
-  return Math.pow(2, -hoursPastGrace / POST_GRACE_HALF_LIFE_HOURS);
+function freshnessMultiplier(ageHours: number): number {
+  return Math.pow(2, -ageHours / HOT_RANKING_HALF_LIFE_HOURS);
 }
 
 export function calculateRankingScore(
@@ -31,17 +29,16 @@ export function calculateRankingScore(
   const comments = Math.max(0, deal.reactions.comments ?? 0);
   const purchases = Math.max(0, deal.reactions.purchases ?? 0);
 
-  const recommendationScore = Math.log2(1 + recommendations) * 120;
-  const commentScore = Math.log2(1 + comments) * 24;
-  const purchaseScore = Math.log2(1 + purchases) * 18;
+  const recommendationScore = Math.log1p(recommendations) * 10;
+  const commentScore = Math.log1p(comments) * 3;
+  const purchaseScore = Math.log1p(purchases) * 2;
   const hasActiveReaction = recommendations + comments + purchases > 0;
   const viewSupport = hasActiveReaction
-    ? Math.min(8, Math.log10(1 + views) * 1.6)
-    : Math.min(1.5, Math.log10(1 + views) * 0.3);
-  const ageDecay = Math.pow(ageHours + 2, 0.82);
+    ? Math.min(2, Math.log1p(views) * 0.25)
+    : Math.min(0.25, Math.log1p(views) * 0.025);
 
-  const engagement = recommendationScore + commentScore + purchaseScore + viewSupport + (hasActiveReaction ? 0 : 1);
-  return (engagement / ageDecay) * postGraceFreshness(ageHours);
+  const engagement = recommendationScore + commentScore + purchaseScore + viewSupport + (hasActiveReaction ? 0 : 0.05);
+  return engagement * freshnessMultiplier(ageHours);
 }
 
 export function calculateDisplayRankingScore(
@@ -50,8 +47,8 @@ export function calculateDisplayRankingScore(
 ): number {
   const base = calculateRankingScore(deal, now);
   if (!deal.trend?.rising) return base;
-  const trendBoost = Math.min(45, Math.log10(1 + deal.trend.velocity) * 22);
-  return base + trendBoost * postGraceFreshness(ageInHours(deal.publishedAt, now));
+  const trendBoost = Math.min(18, Math.log1p(deal.trend.velocity) * 4);
+  return base + trendBoost * freshnessMultiplier(ageInHours(deal.publishedAt, now));
 }
 
 export function explainRanking(
@@ -59,7 +56,12 @@ export function explainRanking(
   peers: Array<Pick<RawDeal, "publishedAt" | "reactions">>,
   now = Date.now()
 ): string {
-  if (deal.baseline?.amount && deal.score?.discountRate && deal.score.discountRate > 0) {
+  if (
+    deal.baseline?.amount &&
+    ["high", "medium"].includes(deal.baseline.confidence) &&
+    deal.score?.discountRate &&
+    deal.score.discountRate > 0
+  ) {
     return `최근 기준가보다 ${Math.round(deal.score.discountRate * 100)}% 저렴`;
   }
 
