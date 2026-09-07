@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseAlgumon } from "./algumon";
 import { parseElevenstXml } from "./elevenst";
-import { completeEomisaeTitle, parseEomisae, parseEomisaeDetail } from "./eomisae";
+import { completeEomisaeTitle, parseEomisae, parseEomisaeDetail, parseEomisaeDetailData } from "./eomisae";
 import { parseFmkoreaBest, parseFmkoreaDetail } from "./fmkorea";
 import { parseNaverShopping } from "./naver";
 import { parsePpomppu } from "./ppomppu";
@@ -166,6 +166,44 @@ describe("source parsers", () => {
   it("keeps the listed Eomisae title when detail content does not match", () => {
     expect(completeEomisaeTitle("불스원 차량용방향제 16...", "다른 상품 16,900원"))
       .toBe("불스원 차량용방향제 16...");
+  });
+
+  it("extracts a direct seller URL from an Eomisae detail page", () => {
+    const detail = parseEomisaeDetailData(`
+      <table><tr><td class="extra_url">
+          <a href="https://m.brand.naver.com/topten/products/9565732526">
+            https://m.brand.naver.com/topten/products/9565732526
+          </a>
+      </td></tr></table>
+    `);
+
+    expect(detail.productUrl).toBe("https://m.brand.naver.com/topten/products/9565732526");
+  });
+
+  it("unwraps a direct product target without retaining LinkPrice attribution", () => {
+    const target = "https://item.gmarket.co.kr/Item?goodscode=123456";
+    const detail = parseEomisaeDetailData(`
+      <table><tr><td class="extra_url">
+          <a href="https://click.linkprice.com/click.php?m=gmarket&amp;tu=${encodeURIComponent(target)}">
+            https://www.gmarket.co.kr
+          </a>
+      </td></tr></table>
+    `);
+
+    expect(detail.productUrl).toBe(target);
+  });
+
+  it("rejects another publisher's affiliate short link", () => {
+    const target = "https://link.coupang.com/a/example";
+    const detail = parseEomisaeDetailData(`
+      <table><tr><td class="extra_url">
+          <a href="https://click.linkprice.com/click.php?m=coupang&amp;tu=${encodeURIComponent(target)}">
+            https://www.coupang.com
+          </a>
+      </td></tr></table>
+    `);
+
+    expect(detail.productUrl).toBeUndefined();
   });
 
   it("parses 11st official product-search XML", () => {

@@ -8,7 +8,18 @@ const SOURCE_URL = "https://eomisae.co.kr/fs";
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
 const MAX_THUMBNAIL_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 const DETAIL_REQUEST_INTERVAL_MS = 5_000;
-const MAX_DETAIL_TITLE_REQUESTS = 6;
+const MAX_DETAIL_REQUESTS = 12;
+const EOMISAE_HOST = "eomisae.co.kr";
+const REDIRECT_HOSTS = new Set([
+  "click.linkprice.com",
+  "link.coupang.com",
+  "coupa.ng"
+]);
+
+export interface EomisaeDetail {
+  title?: string;
+  productUrl?: string;
+}
 
 function normalizedText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -18,13 +29,51 @@ function isTruncatedTitle(value: string): boolean {
   return /(?:\.\.\.|…)$/.test(value.trim());
 }
 
-export function parseEomisaeDetail(html: string): string | undefined {
+function usefulProductUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) return undefined;
+    if (hostname === EOMISAE_HOST || hostname.endsWith(`.${EOMISAE_HOST}`) || REDIRECT_HOSTS.has(hostname)) {
+      return undefined;
+    }
+    if (url.pathname === "/" && !url.search) return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function unwrappedLinkpriceTarget(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== "click.linkprice.com") return undefined;
+    return usefulProductUrl(url.searchParams.get("tu") ?? undefined);
+  } catch {
+    return undefined;
+  }
+}
+
+export function parseEomisaeDetailData(html: string): EomisaeDetail {
   const $ = cheerio.load(html);
   const headingTitle = normalizedText($(".rd_hd h2 a.pjax").first().text());
   const metaTitle = normalizedText($("meta[property='og:title']").attr("content") ?? "")
     .replace(/\s+-\s+(?:인기정보|패션정보|기타정보|래플정보|이벤트정보)\s+-\s+어미새$/, "");
   const title = headingTitle || metaTitle;
-  return title && !isListingPlaceholderTitle(title) ? title : undefined;
+  const link = $(".extra_url a").first();
+  const href = absoluteUrl(link.attr("href"), SOURCE_URL);
+  const visibleUrl = absoluteUrl(normalizedText(link.text()), SOURCE_URL);
+
+  return {
+    title: title && !isListingPlaceholderTitle(title) ? title : undefined,
+    productUrl: usefulProductUrl(visibleUrl) ?? unwrappedLinkpriceTarget(href) ?? usefulProductUrl(href)
+  };
+}
+
+export function parseEomisaeDetail(html: string): string | undefined {
+  return parseEomisaeDetailData(html).title;
 }
 
 export function completeEomisaeTitle(listingTitle: string, detailTitle: string | undefined): string {
@@ -38,12 +87,12 @@ async function waitForDetailRequest(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, DETAIL_REQUEST_INTERVAL_MS));
 }
 
-async function enrichTruncatedTitles(deals: RawDeal[]): Promise<RawDeal[]> {
+async function enrichDetails(deals: RawDeal[]): Promise<RawDeal[]> {
   const enriched: RawDeal[] = [];
   let detailRequests = 0;
 
   for (const deal of deals) {
-    if (!isTruncatedTitle(deal.title) || detailRequests >= MAX_DETAIL_TITLE_REQUESTS) {
+    if (detailRequests >= MAX_DETAIL_REQUESTS) {
       enriched.push(deal);
       continue;
     }
@@ -56,9 +105,15 @@ async function enrichTruncatedTitles(deals: RawDeal[]): Promise<RawDeal[]> {
         enriched.push(deal);
         continue;
       }
-      const detailTitle = parseEomisaeDetail(await response.text());
-      const title = completeEomisaeTitle(deal.title, detailTitle);
-      enriched.push(title === deal.title ? deal : { ...deal, title });
+      const detail = parseEomisaeDetailData(await response.text());
+      const title = isTruncatedTitle(deal.title)
+        ? completeEomisaeTitle(deal.title, detail.title)
+        : deal.title;
+      enriched.push({
+        ...deal,
+        title,
+        productUrl: detail.productUrl ?? deal.productUrl
+      });
     } catch {
       enriched.push(deal);
     }
@@ -154,14 +209,15 @@ export const eomisaeConnector: SourceConnector = {
       const response = await fetchWithPolicy(SOURCE_URL);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const listedDeals = parseEomisae(await response.text());
-      const deals = await enrichTruncatedTitles(listedDeals);
+      const deals = await enrichDetails(listedDeals);
+      const directLinks = deals.filter((deal) => deal.productUrl).length;
       return sourceResult({
         source: this.id,
         mode: this.mode,
         status: "success",
         startedAt,
         deals,
-        message: `공개 목록에서 ${deals.length}건 수집 (요청 간격 5초 정책)`
+        message: `공개 목록 ${deals.length}건, 판매처 링크 ${directLinks}건 수집 (요청 간격 5초 정책)`
       });
     } catch (error) {
       return sourceResult({
