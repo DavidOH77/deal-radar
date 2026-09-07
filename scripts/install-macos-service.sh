@@ -2,7 +2,8 @@
 set -euo pipefail
 
 LABEL="com.dealradar.server"
-ROOT="/Users/ohyeseong/Documents/핫딜 소싱기"
+SCRIPT_DIR="${0:A:h}"
+ROOT="${SCRIPT_DIR:h}"
 SOURCE_PLIST="$ROOT/ops/$LABEL.plist"
 TARGET_PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 RUNTIME_PARENT="$HOME/Library/Application Support/DealRadar"
@@ -56,7 +57,7 @@ launchctl enable "$DOMAIN/$LABEL"
 launchctl kickstart -k "$DOMAIN/$LABEL"
 
 for attempt in {1..20}; do
-  if curl --fail --silent --max-time 2 http://127.0.0.1:3000/api/health >/dev/null; then
+  if curl --fail --silent --connect-timeout 2 --max-time 8 http://127.0.0.1:3000/api/health >/dev/null; then
     echo "DealRadar health check passed: http://127.0.0.1:3000/api/health"
     break
   fi
