@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isExplicitlyEndedTitle, normalizeRawDeal, parsePriceFromTitle } from "./normalize";
+import { isExplicitlyEndedTitle, isNonDealListingTitle, normalizeRawDeal, parsePriceFromTitle } from "./normalize";
 
 describe("parsePriceFromTitle", () => {
   it("parses community prices written immediately after parentheses", () => {
@@ -59,5 +59,16 @@ describe("isExplicitlyEndedTitle", () => {
   it("keeps restocked deals and promotions whose coupon alone ended", () => {
     expect(isExplicitlyEndedTitle("품절풀림 베트남 그린망고 1,490원")).toBe(false);
     expect(isExplicitlyEndedTitle("망고 라방 쿠폰마감 가격 동일 5,490원")).toBe(false);
+  });
+});
+
+describe("isNonDealListingTitle", () => {
+  it("detects daily Naver point-link posts", () => {
+    expect(isNonDealListingTitle("9/8 네이버포인트")).toBe(true);
+    expect(isNonDealListingTitle("[9월 8일] 네이버페이 포인트 받기")).toBe(true);
+  });
+
+  it("keeps discounted point products", () => {
+    expect(isNonDealListingTitle("[네이버] 네이버페이 포인트 5만원권 10% 할인")).toBe(false);
   });
 });

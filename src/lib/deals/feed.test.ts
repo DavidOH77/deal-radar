@@ -115,6 +115,18 @@ describe("selectFeedDeals", () => {
     expect(selectFeedDeals([passive, recommended], { now: NOW, limit: 1 })[0].id)
       .toBe("recommended");
   });
+
+  it("excludes daily point-link posts without hiding discounted point products", () => {
+    const dailyLink = makeDeal("daily-link", NOW, { title: "9/8 네이버포인트", likes: 84 });
+    const discountedProduct = makeDeal("discounted-product", NOW - 60_000, {
+      title: "[네이버] 네이버페이 포인트 5만원권 10% 할인",
+      likes: 2,
+      price: 45_000
+    });
+
+    expect(selectFeedDeals([dailyLink, discountedProduct], { now: NOW }).map((deal) => deal.id))
+      .toEqual(["discounted-product"]);
+  });
 });
 
 describe("compareRecommendations", () => {

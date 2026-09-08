@@ -6,6 +6,7 @@ const SPACE = /\s+/g;
 const ENDED_TITLE_PREFIX = /^[\s\[\]xX❌️🚫⛔]*(?:끝|종료(?:됨|완료)?|품절(?!\s*풀림)|마감(?:됨|완료)?|라이브\s*끝)(?=$|[\s:;!?.~)\]】❌️🚫⛔])/i;
 const ENDED_TITLE_SUFFIX = /(?:쿠폰\s*)?(?:소진|판매\s*종료|행사\s*종료|종료(?:됨|완료)?|품절|마감(?:됨|완료)?)[\s❌️🚫⛔!?.~)\]】]*$/i;
 const DECORATED_ENDED_MARKER = /[❌🚫⛔]\ufe0f?\s*(?:소진|종료|품절|마감)\s*[❌🚫⛔]/i;
+const DAILY_NAVER_POINT_TITLE = /^(?:(?:\d{1,2}\s*(?:\/|\.|-)\s*\d{1,2})|(?:\d{1,2}\s*월\s*\d{1,2}\s*일))?\s*네이버\s*(?:페이\s*)?포인트(?:\s*(?:받기|적립|모음|링크))?$/i;
 const TITLE_DERIVED_PRICE_SOURCES = new Set<SourceId>(["eomisae", "womencity", "fmkorea", "ppomppu"]);
 
 export function normalizeTitle(title: string): string {
@@ -27,6 +28,15 @@ export function isExplicitlyEndedTitle(title: string): boolean {
   return ENDED_TITLE_PREFIX.test(normalized)
     || ENDED_TITLE_SUFFIX.test(normalized)
     || DECORATED_ENDED_MARKER.test(normalized);
+}
+
+export function isNonDealListingTitle(title: string): boolean {
+  const normalized = title
+    .normalize("NFKC")
+    .replace(/[\[\]()]/g, " ")
+    .replace(SPACE, " ")
+    .trim();
+  return DAILY_NAVER_POINT_TITLE.test(normalized);
 }
 
 export function canonicalKey(source: SourceId, sourceDealId: string, title: string): string {

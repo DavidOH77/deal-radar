@@ -1,5 +1,5 @@
 import { dedupeDealsForDisplay } from "./quality";
-import { isExplicitlyEndedTitle } from "./normalize";
+import { isExplicitlyEndedTitle, isNonDealListingTitle } from "./normalize";
 import { calculateDisplayRankingScore } from "./scoring";
 import type { Deal } from "./types";
 
@@ -61,6 +61,7 @@ export function selectFeedDeals(
       && publishedAt >= cutoff
       && publishedAt <= now + FUTURE_TOLERANCE_MS
       && !isExplicitlyEndedTitle(deal.title)
+      && !isNonDealListingTitle(deal.title)
       && (!expiresAt || expiresAt > now);
   });
 

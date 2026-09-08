@@ -4,7 +4,7 @@ import { parseElevenstXml } from "./elevenst";
 import { completeEomisaeTitle, parseEomisae, parseEomisaeDetail, parseEomisaeDetailData } from "./eomisae";
 import { parseFmkoreaBest, parseFmkoreaDetail } from "./fmkorea";
 import { parseNaverShopping } from "./naver";
-import { parsePpomppu } from "./ppomppu";
+import { mergePpomppuFeeds, parsePpomppu, parsePpomppuRss } from "./ppomppu";
 import { parseQuasarzoneWebSearch } from "./quasarzone";
 import { parseTheqoo, parseTheqooDetail } from "./theqoo";
 import { parseWomencity, parseWomencityDetail } from "./womencity";
@@ -281,6 +281,68 @@ describe("source parsers", () => {
       publishedAt: "2026-08-23T11:44:11.000Z",
       reactions: { likes: 4, comments: 2, views: 564 }
     });
+  });
+
+  it("parses Ppomppu RSS reactions and a complete seller URL", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" ?>
+      <rss><channel><item>
+        <title>[네이버] 공차 블랙 밀크티 + 펄 L (4,160원/무료)</title>
+        <link>http://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=732713</link>
+        <description>상품 링크 https://smartstore.naver.com/gongcha/products/13727920610</description>
+        <pubDate>Tue, 08 Sep 2026 15:37:24 GMT</pubDate>
+        <hits> [9|1747|5|0]</hits>
+      </item></channel></rss>`;
+    const [deal] = parsePpomppuRss(xml, collectedAt);
+
+    expect(deal).toMatchObject({
+      sourceDealId: "732713",
+      sourceUrl: "https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&no=732713",
+      productUrl: "https://smartstore.naver.com/gongcha/products/13727920610",
+      publishedAt: "2026-09-08T15:37:24.000Z",
+      reactions: { likes: 9, views: 1747, comments: 5 }
+    });
+  });
+
+  it("rejects truncated, publisher-internal, and foreign affiliate URLs from Ppomppu RSS", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" ?>
+      <rss><channel>
+        <item><title>잘린 링크</title><link>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=1</link><description>https://s.lotteon.com/EcK...</description></item>
+        <item><title>내부 링크</title><link>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=2</link><description>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=2</description></item>
+        <item><title>타 제휴 링크</title><link>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=3</link><description>https://link.coupang.com/a/example</description></item>
+      </channel></rss>`;
+
+    expect(parsePpomppuRss(xml, collectedAt).map((deal) => deal.productUrl)).toEqual([
+      undefined,
+      undefined,
+      undefined
+    ]);
+  });
+
+  it("merges RSS seller links into richer Ppomppu list rows and keeps RSS-only entries", () => {
+    const listed = parsePpomppu(`
+      <table><tr class="baseList">
+        <td class="baseList-numb">732713</td>
+        <td class="title"><a class="baseList-thumb"><img src="//cdn2.ppomppu.co.kr/item.jpg"></a>
+          <a class="baseList-title" href="view.php?id=ppomppu&amp;no=732713">공차 밀크티</a>
+          <span class="baseList-c">7</span><small class="baseList-small">[식품/건강]</small></td>
+        <td title="26.09.09 00:37:24"></td><td class="baseList-rec">10</td><td class="baseList-views">1800</td>
+      </tr></table>`, collectedAt);
+    const rss = parsePpomppuRss(`
+      <rss><channel>
+        <item><title>공차 밀크티</title><link>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=732713</link><description>https://toss.im/_m/DOaoBJBd</description><hits>[9|1747|5|0]</hits></item>
+        <item><title>RSS 전용 딜</title><link>https://www.ppomppu.co.kr/zboard/view.php?id=ppomppu&amp;no=732712</link><description></description><hits>[1|10|0|0]</hits></item>
+      </channel></rss>`, collectedAt);
+
+    const deals = mergePpomppuFeeds(listed, rss);
+    expect(deals).toHaveLength(2);
+    expect(deals[0]).toMatchObject({
+      sourceDealId: "732713",
+      productUrl: "https://toss.im/_m/DOaoBJBd",
+      imageUrl: "https://cdn2.ppomppu.co.kr/item.jpg",
+      category: "식품/건강",
+      reactions: { likes: 10, comments: 7, views: 1800 }
+    });
+    expect(deals[1].sourceDealId).toBe("732712");
   });
 
   it("parses deal-only rows from Theqoo's Theqdeal board", () => {
