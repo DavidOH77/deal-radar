@@ -100,6 +100,48 @@ describe("calculateRankingScore", () => {
       .toBeGreaterThan(calculateRankingScore(viewOnly, now.getTime()));
   });
 
+  it("keeps one recommendation above any amount of passive activity in the feed window", () => {
+    const recommended: RawDeal = {
+      ...raw,
+      publishedAt: new Date(now.getTime() - 47 * 3_600_000).toISOString(),
+      reactions: { likes: 1 }
+    };
+    const passiveSpike = {
+      ...raw,
+      publishedAt: now.toISOString(),
+      reactions: { views: 10_000_000, comments: 100_000 },
+      trend: {
+        windowMinutes: 60,
+        viewsDelta: 1_000_000,
+        likesDelta: 0,
+        commentsDelta: 100_000,
+        purchasesDelta: 0,
+        velocity: 1_000_000,
+        rising: true,
+        measuredAt: now.toISOString()
+      }
+    };
+
+    expect(calculateDisplayRankingScore(recommended, now.getTime()))
+      .toBeGreaterThan(calculateDisplayRankingScore(passiveSpike, now.getTime()));
+  });
+
+  it("preserves a meaningful recommendation-count lead across nearby ages", () => {
+    const stronglyRecommended: RawDeal = {
+      ...raw,
+      publishedAt: new Date(now.getTime() - 8 * 3_600_000).toISOString(),
+      reactions: { likes: 80 }
+    };
+    const fresherButWeak: RawDeal = {
+      ...raw,
+      publishedAt: new Date(now.getTime() - 4 * 3_600_000).toISOString(),
+      reactions: { likes: 15 }
+    };
+
+    expect(calculateRankingScore(stronglyRecommended, now.getTime()))
+      .toBeGreaterThan(calculateRankingScore(fresherButWeak, now.getTime()));
+  });
+
   it("decays the same engagement as time passes", () => {
     const scoreNow = calculateRankingScore(raw, now.getTime());
     const scoreTomorrow = calculateRankingScore(raw, now.getTime() + 24 * 3_600_000);

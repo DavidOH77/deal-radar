@@ -158,38 +158,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   gap: 24px;
   padding: 28px 0 22px;
 }
-.overview-lead {
-  min-width: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-}
-.overview-brand-object {
-  width: 76px;
-  height: 76px;
-  display: grid;
-  place-items: center;
-  flex: none;
-}
-.overview-brand-object .brand-object {
-  width: 76px;
-  height: auto;
-}
-.overview-copy { min-width: 0; }
 .overview h1, .page-heading h1 {
   margin: 0;
   font-size: 26px;
   font-weight: 600;
   line-height: 36px;
 }
-.overview > div, .page-heading > div { min-width: 0; }
-.eyebrow {
-  margin: 0 0 4px;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 16px;
-}
+.page-heading > div { min-width: 0; }
 .feed-summary {
   margin: 0 2px 3px auto;
   display: flex;
@@ -495,7 +470,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--text-secondary);
   text-align: center;
 }
-.brand-object { display: block; width: auto; height: auto; object-fit: contain; }
 .empty-state strong, .saved-empty strong, .alert-empty strong { color: var(--text-primary); font-size: 14px; font-weight: 500; }
 .empty-state p, .saved-empty p, .alert-empty p { margin: 0; font-size: 12px; }
 .empty-state button {
@@ -872,9 +846,6 @@ footer p { margin: 0; text-align: right; }
   }
   .page-shell { padding-right: 14px; padding-left: 14px; }
   .overview, .page-heading { min-height: 0; padding: 20px 0 16px; }
-  .overview-lead { gap: 9px; }
-  .overview-brand-object { width: 48px; height: 52px; }
-  .overview-brand-object .brand-object { width: 48px; }
   .overview h1, .page-heading h1 { font-size: 21px; line-height: 28px; }
   .feed-summary { margin-top: 19px; }
   .feed-summary span, .page-heading p { display: none; }

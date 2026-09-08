@@ -3,7 +3,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { countAlertMatches, matchesDealAlert, type DealAlert } from "@/lib/deals/preferences";
 import type { Deal } from "@/lib/deals/types";
-import { BrandObject } from "./brand-object";
 import { DealCard } from "./deal-card";
 import { MaterialIcon } from "./material-icon";
 
@@ -65,7 +64,6 @@ export function InterestPanel({
 
         {!builderOpen && alerts.length === 0 ? (
           <div className="alert-empty">
-            <BrandObject size={58} />
             <strong>첫 관심 조건을 만들어보세요</strong>
             <p>찾는 상품이 올라오면 이 화면에서 바로 확인할 수 있습니다.</p>
             <button className="primary-button" type="button" onClick={() => setBuilderOpen(true)}>
@@ -156,7 +154,6 @@ export function InterestPanel({
           </div>
         ) : (
           <div className="saved-empty">
-            <BrandObject size={52} />
             <strong>아직 저장한 딜이 없습니다</strong>
             <p>랭킹에서 하트를 누르면 여기에 모입니다.</p>
           </div>

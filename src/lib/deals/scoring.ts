@@ -10,6 +10,7 @@ const confidenceWeight: Record<Confidence, number> = {
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 export const HOT_RANKING_HALF_LIFE_HOURS = 6;
+const RECOMMENDATION_PRIORITY_FLOOR = 10_000;
 
 function ageInHours(publishedAt: string, now: number): number {
   return Math.max(0, (now - new Date(publishedAt).getTime()) / 3_600_000);
@@ -28,17 +29,18 @@ export function calculateRankingScore(
   const recommendations = Math.max(0, deal.reactions.likes ?? 0);
   const comments = Math.max(0, deal.reactions.comments ?? 0);
   const purchases = Math.max(0, deal.reactions.purchases ?? 0);
+  const freshness = freshnessMultiplier(ageHours);
 
-  const recommendationScore = Math.log1p(recommendations) * 10;
-  const commentScore = Math.log1p(comments) * 3;
-  const purchaseScore = Math.log1p(purchases) * 2;
-  const hasActiveReaction = recommendations + comments + purchases > 0;
-  const viewSupport = hasActiveReaction
-    ? Math.min(2, Math.log1p(views) * 0.25)
-    : Math.min(0.25, Math.log1p(views) * 0.025);
+  const secondarySignal = (
+    Math.min(0.6, Math.log1p(comments) * 0.04) +
+    Math.min(0.25, Math.log1p(views) * 0.02) +
+    Math.min(0.4, Math.log1p(purchases) * 0.04)
+  ) * freshness;
 
-  const engagement = recommendationScore + commentScore + purchaseScore + viewSupport + (hasActiveReaction ? 0 : 0.05);
-  return engagement * freshnessMultiplier(ageHours);
+  if (recommendations === 0) return secondarySignal;
+
+  const recommendationSignal = recommendations * 100 * freshness;
+  return RECOMMENDATION_PRIORITY_FLOOR + recommendationSignal + secondarySignal;
 }
 
 export function calculateDisplayRankingScore(

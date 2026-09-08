@@ -69,8 +69,7 @@ rank 22 | image 84 | product flexible | actions 32
 - Header/App mark: public/brand/spike-align.svg
 - Monochrome mark: public/brand/spike-align-mono.svg
 - Browser icon: src/app/icon.svg
-- 3D object: public/brand/spike-align-object-v1.png
-- 3D object는 빈 상태와 공유 자산에만 사용하며 딜 행이나 배경 장식으로 반복하지 않는다.
+- 장식용 3D 오브젝트는 사용하지 않고 평면 마크와 워드마크만 유지한다.
 
 ## 상태와 접근성
 

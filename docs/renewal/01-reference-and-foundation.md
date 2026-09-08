@@ -165,21 +165,20 @@
 
 ## 5. 자산 계약
 
-### 로고와 3D 에셋의 역할 분리
+### 로고 자산 원칙
 
 - 피드·헤더: 20~24px 평면 벡터 마크 + Pretendard 600 워드마크
 - App icon: 선택된 마크만 단색 또는 2색으로 사용
-- 공유 OG, 빈 상태, 알림 설정 완료: 같은 형상의 무광 금속 3D 에셋 사용 가능
-- 매 딜 row, 필터, 배경 장식에 3D 에셋을 반복하지 않는다.
+- 공유 OG와 빈 상태는 장식 에셋 없이 마크, 제품명, 필수 안내만 사용한다.
+- 3D 장식 에셋은 제품 화면과 공유 자산에 사용하지 않는다.
 
 ### 현재 승인 후보
 
-- 3D 탐색 보드: `audit/renewal/assets/brand-object-directions.png`
 - A / Align: `audit/renewal/assets/mark-align.svg`
 - B / Fold: `audit/renewal/assets/mark-fold.svg`
 - C / Signal: `audit/renewal/assets/mark-signal.svg`
 
-3D 탐색 이미지는 빛·재질·복잡도를 정하기 위한 프로토타입이다. 승인 후 선택된 하나를 정확한 SVG, 1024px PNG, monochrome favicon, OG 크기로 재제작한다.
+기존 3D 탐색 보드는 폐기된 프로토타입으로 취급하며 제품 자산으로 재사용하지 않는다.
 
 ## 6. 반응형 계약
 

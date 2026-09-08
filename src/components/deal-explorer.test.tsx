@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DealExplorer } from "./deal-explorer";
 
 describe("DealExplorer", () => {
-  it("uses the approved 3D Align object as an above-the-fold brand signal", () => {
+  it("keeps the ranking overview focused on the product heading", () => {
     const markup = renderToStaticMarkup(
       <DealExplorer
         initialData={{
@@ -14,8 +14,8 @@ describe("DealExplorer", () => {
       />
     );
 
-    expect(markup).toContain("overview-brand-object");
-    expect(markup).toContain("spike-align-object-v1.png");
     expect(markup).toContain("지금 반응이 오르는 딜");
+    expect(markup).not.toContain("LIVE RANKING");
+    expect(markup).not.toContain("spike-align-object-v1.png");
   });
 });

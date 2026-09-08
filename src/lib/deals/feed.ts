@@ -16,10 +16,14 @@ interface FeedSelectionOptions {
 }
 
 export function reactionSignal(deal: Pick<Deal, "reactions">): number {
-  return (deal.reactions.likes ?? 0) * 12
-    + (deal.reactions.comments ?? 0) * 3
+  const recommendations = Math.max(0, deal.reactions.likes ?? 0);
+  const secondary = (deal.reactions.comments ?? 0) * 3
     + (deal.reactions.purchases ?? 0) * 2
     + Math.min(8, (deal.reactions.views ?? 0) / 1_000);
+  const boundedSecondary = Math.min(999, Math.max(0, secondary));
+  return recommendations > 0
+    ? 1_000_000 + recommendations * 1_000 + boundedSecondary
+    : boundedSecondary;
 }
 
 export function compareRecommendations(a: Deal, b: Deal): number {

@@ -6,7 +6,6 @@ import { compareRecommendations } from "@/lib/deals/feed";
 import { DISPLAY_CATEGORIES, displayCategory, relativeTime } from "@/lib/deals/presentation";
 import { dedupeDealsForDisplay } from "@/lib/deals/quality";
 import { calculateDisplayRankingScore, explainRanking } from "@/lib/deals/scoring";
-import { BrandObject } from "./brand-object";
 import { DealCard } from "./deal-card";
 import { MaterialIcon } from "./material-icon";
 import { useDealPreferences } from "./use-deal-preferences";
@@ -93,15 +92,7 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
   return (
     <>
       <section className="overview">
-        <div className="overview-lead">
-          <span className="overview-brand-object" aria-hidden="true">
-            <BrandObject size={88} preload />
-          </span>
-          <div className="overview-copy">
-            <p className="eyebrow">LIVE RANKING</p>
-            <h1>지금 반응이 오르는 딜</h1>
-          </div>
-        </div>
+        <h1>지금 반응이 오르는 딜</h1>
         <p className="feed-summary">
           <strong>{visibleDeals.length.toLocaleString("ko-KR")}개</strong>
           <span>최근 48시간 · {freshness}</span>
@@ -205,7 +196,6 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
         })}
         {!visibleDeals.length ? (
           <div className="empty-state">
-            <BrandObject size={48} />
             <strong>조건에 맞는 딜이 없습니다</strong>
             <button type="button" onClick={() => {
               setQuery("");

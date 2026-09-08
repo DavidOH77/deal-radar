@@ -107,6 +107,14 @@ describe("selectFeedDeals", () => {
     expect(selectFeedDeals([active, soldOut, expired, restocked], { now: NOW }).map((deal) => deal.id))
       .toEqual(["active", "restocked"]);
   });
+
+  it("ranks one recommendation above extreme views and comments", () => {
+    const recommended = makeDeal("recommended", NOW - 47 * 60 * 60 * 1_000, { likes: 1 });
+    const passive = makeDeal("passive", NOW, { views: 10_000_000, comments: 100_000 });
+
+    expect(selectFeedDeals([passive, recommended], { now: NOW, limit: 1 })[0].id)
+      .toBe("recommended");
+  });
 });
 
 describe("compareRecommendations", () => {

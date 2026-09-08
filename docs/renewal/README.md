@@ -8,7 +8,6 @@
 - 레퍼런스와 Foundation: [01-reference-and-foundation.md](./01-reference-and-foundation.md)
 - 화면 방향과 권고안: [02-direction-brief.md](./02-direction-brief.md)
 - 브랜드 마크: [`public/brand/spike-align.svg`](../../public/brand/spike-align.svg)
-- 3D 브랜드 오브젝트: [`public/brand/spike-align-object-v1.png`](../../public/brand/spike-align-object-v1.png)
 - 구현 검증: [`audit/renewal/implementation/home-desktop.png`](../../audit/renewal/implementation/home-desktop.png), [`home-mobile.png`](../../audit/renewal/implementation/home-mobile.png)
 
 ## 권고 조합
