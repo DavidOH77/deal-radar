@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareRecommendations, selectFeedDeals } from "./feed";
+import { compareRecommendations, FEED_WINDOW_HOURS, selectFeedDeals } from "./feed";
 import type { Deal } from "./types";
 
 const NOW = new Date("2026-08-28T00:00:00.000Z").getTime();
@@ -45,6 +45,15 @@ function makeDeal(
 }
 
 describe("selectFeedDeals", () => {
+  it("defaults to a 24-hour public feed window", () => {
+    const insideWindow = makeDeal("inside", NOW - 24 * 60 * 60 * 1_000, { likes: 1 });
+    const outsideWindow = makeDeal("outside", NOW - 24 * 60 * 60 * 1_000 - 1, { likes: 10_000 });
+
+    expect(FEED_WINDOW_HOURS).toBe(24);
+    expect(selectFeedDeals([outsideWindow, insideWindow], { now: NOW }).map((deal) => deal.id))
+      .toEqual(["inside"]);
+  });
+
   it("bounds the feed while retaining both newest and strongly reacting deals", () => {
     const deals = Array.from({ length: 80 }, (_, index) => makeDeal(
       `deal-${index}`,
@@ -109,7 +118,7 @@ describe("selectFeedDeals", () => {
   });
 
   it("ranks one recommendation above extreme views and comments", () => {
-    const recommended = makeDeal("recommended", NOW - 47 * 60 * 60 * 1_000, { likes: 1 });
+    const recommended = makeDeal("recommended", NOW - 23 * 60 * 60 * 1_000, { likes: 1 });
     const passive = makeDeal("passive", NOW, { views: 10_000_000, comments: 100_000 });
 
     expect(selectFeedDeals([passive, recommended], { now: NOW, limit: 1 })[0].id)

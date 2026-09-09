@@ -6,6 +6,10 @@ import { errorMessage, sourceResult } from "./result";
 
 const SOURCE_URL = "https://www.algumon.com/n/deal";
 
+function isPublicCollectionEnabled(): boolean {
+  return process.env.ENABLE_ALGUMON_PUBLIC_CRAWL === "1";
+}
+
 interface JsonLdItem {
   url?: string;
   item?: {
@@ -106,6 +110,16 @@ export const algumonConnector: SourceConnector = {
   mode: "public_page",
   async collect() {
     const startedAt = new Date().toISOString();
+    if (!isPublicCollectionEnabled()) {
+      return sourceResult({
+        source: this.id,
+        mode: this.mode,
+        status: "disabled",
+        startedAt,
+        message: "공개 목록의 자동 수집 응답이 안정적이지 않아 기본 비활성화했습니다."
+      });
+    }
+
     try {
       const response = await fetchWithPolicy(SOURCE_URL);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

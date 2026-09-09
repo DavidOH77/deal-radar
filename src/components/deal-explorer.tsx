@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DealsResponse } from "@/lib/deals/contracts";
-import { compareRecommendations } from "@/lib/deals/feed";
+import { compareRecommendations, FEED_WINDOW_HOURS } from "@/lib/deals/feed";
 import { DISPLAY_CATEGORIES, displayCategory, relativeTime } from "@/lib/deals/presentation";
 import { dedupeDealsForDisplay } from "@/lib/deals/quality";
 import { calculateDisplayRankingScore, explainRanking } from "@/lib/deals/scoring";
@@ -95,7 +95,7 @@ export function DealExplorer({ initialData }: { initialData: DealsResponse }) {
         <h1>지금 반응이 오르는 딜</h1>
         <p className="feed-summary">
           <strong>{visibleDeals.length.toLocaleString("ko-KR")}개</strong>
-          <span>최근 48시간 · {freshness}</span>
+          <span>최근 {FEED_WINDOW_HOURS}시간 · {freshness}</span>
         </p>
       </section>
 

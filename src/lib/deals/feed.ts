@@ -6,7 +6,7 @@ import type { Deal } from "./types";
 const HOUR_MS = 60 * 60 * 1_000;
 const FUTURE_TOLERANCE_MS = 15 * 60 * 1_000;
 
-export const FEED_WINDOW_HOURS = 48;
+export const FEED_WINDOW_HOURS = 24;
 export const FEED_DEAL_LIMIT = 600;
 
 interface FeedSelectionOptions {
