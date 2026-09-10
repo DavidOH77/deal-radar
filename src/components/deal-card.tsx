@@ -1,10 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import type { Deal } from "@/lib/deals/types";
 import { formatMetric, presentDeal, relativeTime, SOURCE_LABELS } from "@/lib/deals/presentation";
-import { dealDetailPath } from "@/lib/deals/routing";
+import { dealOriginalPath } from "@/lib/deals/routing";
 import { MaterialIcon } from "./material-icon";
 
 const COMMUNITY_LABELS = new Set([
@@ -135,9 +134,16 @@ export function DealCard({
       </div>
       <ReactionSummary deal={deal} reason={reason} />
       <div className="row-actions">
-        <Link className="detail-button" href={dealDetailPath(deal)} aria-label={`${presented.title} 상세 보기`} title="가격과 반응 근거">
+        <a
+          className="detail-button"
+          href={dealOriginalPath(deal)}
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+          aria-label={`${presented.title} 원문 보기`}
+          title="원문에서 쿠폰과 구매 조건 확인"
+        >
           <MaterialIcon name="info" size={18} />
-        </Link>
+        </a>
         <SaveButton dealId={deal.id} saved={saved} onToggleSaved={onToggleSaved} />
       </div>
     </article>

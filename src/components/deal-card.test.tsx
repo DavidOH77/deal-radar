@@ -28,7 +28,7 @@ function deal(overrides: Partial<Deal> = {}): Deal {
 }
 
 describe("DealCard", () => {
-  it("keeps the community source private while showing the seller and outbound row link", () => {
+  it("keeps the source private while splitting the seller row and original-post actions", () => {
     const markup = renderToStaticMarkup(
       <DealCard deal={deal()} referenceTime="2026-09-07T02:00:00.000Z" rank={1} />
     );
@@ -36,6 +36,9 @@ describe("DealCard", () => {
     expect(markup).toContain("쿠팡");
     expect(markup).not.toContain("뽐뿌");
     expect(markup).toContain('href="/go/ppomppu_123"');
+    expect(markup).toContain('href="/original/ppomppu_123"');
+    expect(markup).toContain("원문에서 쿠폰과 구매 조건 확인");
+    expect(markup).not.toContain(deal().sourceUrl);
     expect(markup).toContain("추천 12");
   });
 

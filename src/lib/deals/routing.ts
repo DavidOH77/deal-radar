@@ -14,3 +14,7 @@ export function dealSlug(deal: Deal): string {
 export function dealDetailPath(deal: Deal): string {
   return `/deals/${encodeURIComponent(deal.id)}/${dealSlug(deal)}`;
 }
+
+export function dealOriginalPath(deal: Pick<Deal, "id">): string {
+  return `/original/${encodeURIComponent(deal.id)}`;
+}

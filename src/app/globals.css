@@ -448,7 +448,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   justify-content: flex-end;
   gap: 0;
 }
-.row-actions .save-button, .row-actions .detail-button { width: 34px; height: 34px; }
+.row-actions .save-button { width: 34px; height: 34px; }
+.row-actions .detail-button { width: 40px; height: 40px; }
 .mobile-nav { display: none; }
 
 .error-banner {
@@ -921,7 +922,8 @@ footer p { margin: 0; text-align: right; }
     justify-content: space-between;
   }
   .deal-ledger-row.is-unranked .row-actions { grid-column: 3; }
-  .row-actions .save-button, .row-actions .detail-button { width: 32px; height: 32px; }
+  .row-actions .save-button { width: 32px; height: 32px; }
+  .row-actions .detail-button { width: 40px; height: 40px; }
 
   .section-heading h2 { font-size: 16px; }
   .alert-form { grid-template-columns: 1fr; }
