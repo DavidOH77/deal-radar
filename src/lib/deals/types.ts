@@ -27,6 +27,7 @@ export type DealTier = "S" | "A" | "B" | "WATCH";
 export type CrawlTrigger = "cron" | "manual" | "bootstrap" | "development";
 export type CrawlRunStatus = "completed" | "failed";
 export type Confidence = "high" | "medium" | "low" | "unknown";
+export type PublishedAtPrecision = "minute" | "day";
 export type CommerceProvider = "coupang" | "elevenst" | "gmarket" | "auction" | "naver" | "ssg" | "oliveyoung";
 export type AffiliateMethod = "provided_url" | "coupang_api" | "query" | "template" | "direct";
 export type BaselineKind =
@@ -51,6 +52,7 @@ export interface RawDeal {
   imageUrl?: string;
   category?: string;
   publishedAt: string;
+  publishedAtPrecision?: PublishedAtPrecision;
   expiresAt?: string;
   dealPrice?: Money;
   sellerReferencePrice?: Money;

@@ -139,6 +139,7 @@ export function DealCard({
           href={dealOriginalPath(deal)}
           target="_blank"
           rel="nofollow noopener noreferrer"
+          onClick={(event) => event.stopPropagation()}
           aria-label={`${presented.title} 원문 보기`}
           title="원문에서 쿠폰과 구매 조건 확인"
         >

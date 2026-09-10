@@ -466,6 +466,24 @@ describe("source parsers", () => {
     });
   });
 
+  it("uses midday KST for Women's Generation posts that only expose a calendar date", () => {
+    const [deal] = parseWomencity(`<script>var articles = [];
+      articles.push({
+        dataid: 24032,
+        fldid: "WSmj",
+        title: "비비안 사각팬티3매/심리스브라 1+1 17,900원",
+        viewCount: Number("4049"),
+        commentCount: Number("10"),
+        articleElapsedTime: "26.09.10"
+      });
+    </script>`, "2026-09-10T18:00:00.000Z");
+
+    expect(deal).toMatchObject({
+      publishedAt: "2026-09-10T03:00:00.000Z",
+      publishedAtPrecision: "day"
+    });
+  });
+
   it("parses Naver Shopping API products without treating the high price as a baseline", () => {
     const [deal] = parseNaverShopping({
       items: [{

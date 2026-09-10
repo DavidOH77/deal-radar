@@ -14,6 +14,7 @@ interface WomencityDetail {
   imageUrl?: string;
   productUrl?: string;
   publishedAt?: string;
+  publishedAtPrecision?: RawDeal["publishedAtPrecision"];
   reactions: RawDeal["reactions"];
 }
 
@@ -26,12 +27,18 @@ function kstIso(year: number, month: number, day: number, hour = 0, minute = 0):
   return new Date(Date.UTC(year, month - 1, day, hour, minute) - KST_OFFSET_MS).toISOString();
 }
 
-function parsePublishedAt(value: string, collectedAt: string): string {
+function parsePublishedAt(
+  value: string,
+  collectedAt: string
+): Pick<RawDeal, "publishedAt" | "publishedAtPrecision"> {
   const normalized = value.replace(/\s+/g, " ").trim();
   const collectedTime = new Date(collectedAt).getTime();
   const relative = normalized.match(/^(?:(\d+)시간\s*)?(?:(\d+)분\s*)?전$/);
   if (relative && (relative[1] || relative[2])) {
-    return new Date(collectedTime - (Number(relative[1] ?? 0) * 60 + Number(relative[2] ?? 0)) * 60_000).toISOString();
+    return {
+      publishedAt: new Date(collectedTime - (Number(relative[1] ?? 0) * 60 + Number(relative[2] ?? 0)) * 60_000).toISOString(),
+      publishedAtPrecision: "minute"
+    };
   }
 
   const current = kstParts(collectedAt);
@@ -41,12 +48,18 @@ function parsePublishedAt(value: string, collectedAt: string): string {
     if (new Date(result).getTime() > collectedTime + 5 * 60_000) {
       result = new Date(new Date(result).getTime() - 24 * 60 * 60 * 1000).toISOString();
     }
-    return result;
+    return { publishedAt: result, publishedAtPrecision: "minute" };
   }
 
   const shortDate = normalized.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
-  if (shortDate) return kstIso(2000 + Number(shortDate[1]), Number(shortDate[2]), Number(shortDate[3]));
-  return collectedAt;
+  if (shortDate) {
+    return {
+      // Daum drops the time after the posting day. Noon is the least-biased point in that 24-hour range.
+      publishedAt: kstIso(2000 + Number(shortDate[1]), Number(shortDate[2]), Number(shortDate[3]), 12),
+      publishedAtPrecision: "day"
+    };
+  }
+  return { publishedAt: collectedAt };
 }
 
 function propertyString(block: string, key: string): string | undefined {
@@ -85,6 +98,7 @@ export function parseWomencity(html: string, collectedAt = new Date().toISOStrin
 
     const imageUrl = propertyString(block, "thumbnailImageUrl");
     const elapsed = propertyString(block, "articleElapsedTime") ?? "";
+    const published = parsePublishedAt(elapsed, collectedAt);
     deals.push({
       source: "womencity",
       sourceMode: "public_page",
@@ -93,7 +107,7 @@ export function parseWomencity(html: string, collectedAt = new Date().toISOStrin
       sourceUrl: `${SOURCE_URL}/${sourceDealId}`,
       imageUrl: imageUrl ? absoluteUrl(imageUrl, SOURCE_ORIGIN) : undefined,
       category: "세일정보",
-      publishedAt: parsePublishedAt(elapsed, collectedAt),
+      ...published,
       expiresAt: /^re\s*:/i.test(title) || isExplicitlyEndedTitle(title) ? collectedAt : undefined,
       reactions: {
         comments: propertyNumber(block, "commentCount"),
@@ -122,6 +136,7 @@ export function parseWomencityDetail(html: string, collectedAt = new Date().toIS
   const articleLink = $("#article a[href]").toArray()
     .map((element) => $(element).attr("href"))
     .find(isExternalArticleLink);
+  const published = publishedText ? parsePublishedAt(publishedText, collectedAt) : undefined;
 
   return {
     imageUrl: absoluteUrl(
@@ -129,7 +144,8 @@ export function parseWomencityDetail(html: string, collectedAt = new Date().toIS
       SOURCE_ORIGIN
     ),
     productUrl: absoluteUrl(articleLink, SOURCE_ORIGIN),
-    publishedAt: publishedText ? parsePublishedAt(publishedText, collectedAt) : undefined,
+    publishedAt: published?.publishedAt,
+    publishedAtPrecision: published?.publishedAtPrecision,
     reactions: {
       comments: numberValue($("a.link_cmt .num_cmt").first().text()),
       views: numberValue(subjectText.match(/조회수\s*([\d,]+)/)?.[1])
@@ -158,6 +174,9 @@ async function enrichDeals(deals: RawDeal[]): Promise<RawDeal[]> {
           imageUrl: detail.imageUrl ?? deal.imageUrl,
           productUrl: detail.productUrl,
           publishedAt: detail.publishedAt ?? deal.publishedAt,
+          publishedAtPrecision: detail.publishedAt
+            ? detail.publishedAtPrecision
+            : deal.publishedAtPrecision,
           reactions: {
             comments: detail.reactions.comments ?? deal.reactions.comments,
             views: detail.reactions.views ?? deal.reactions.views

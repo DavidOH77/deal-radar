@@ -51,6 +51,13 @@ describe("deal presentation", () => {
     expect(displayCategory({ title: "약산성 두피 샴푸 300ml", category: "생활" })).toBe("뷰티");
     expect(displayCategory({ title: "퍼퓸 바디 미스트 250ml", category: "기타" })).toBe("뷰티");
     expect(displayCategory({ title: "노글루 속눈썹 6종", category: "잡화" })).toBe("뷰티");
+    expect(displayCategory({ title: "아토팜 패밀리세일 ~70%", category: "기타" })).toBe("뷰티");
+  });
+
+  it("keeps health foods out of noisy beauty categories", () => {
+    expect(displayCategory({ title: "오솔미 ABC쥬스 파우더 스틱 30포", category: "뷰티" })).toBe("식품");
+    expect(displayCategory({ title: "스완슨 퓨어 비타민 C 파우더 454g", category: "뷰티" })).toBe("식품");
+    expect(displayCategory({ title: "하이뮨 프로틴 밤티라미수 18개", category: "기타" })).toBe("식품");
   });
 
   it("keeps electric hair tools in appliances", () => {

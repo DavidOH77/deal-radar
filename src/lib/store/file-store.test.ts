@@ -65,6 +65,33 @@ describe("mergeRawDeal", () => {
     });
   });
 
+  it("keeps an exact Women's Generation time when a later crawl only exposes the date", () => {
+    const previous = {
+      ...raw,
+      source: "womencity",
+      sourceDealId: "24032",
+      sourceUrl: "https://m.cafe.daum.net/subdued20club/WSmj/24032",
+      publishedAt: "2026-09-10T06:32:00.000Z",
+      id: "womencity_24032",
+      canonicalKey: "key",
+      normalizedTitle: "title",
+      baseline: { kind: "unknown", confidence: "unknown", sampleSize: 0, label: "수집 중" },
+      score: { total: 0, price: 0, reaction: 0, trust: 0, urgency: 0, tier: "WATCH" },
+      outboundUrl: "/go/womencity_24032"
+    } satisfies Deal;
+    const dateOnly = {
+      ...previous,
+      publishedAt: "2026-09-10T03:00:00.000Z",
+      publishedAtPrecision: "day",
+      collectedAt: "2026-09-10T18:00:00.000Z"
+    } satisfies RawDeal;
+
+    expect(mergeRawDeal(previous, dateOnly)).toMatchObject({
+      publishedAt: "2026-09-10T06:32:00.000Z",
+      publishedAtPrecision: "minute"
+    });
+  });
+
   it("repairs a stored title-derived price without retaining an invalid baseline", () => {
     const repaired = repairStoredDealPrice({
       ...raw,

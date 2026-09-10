@@ -310,8 +310,23 @@ export function repairStoredDealPrice(deal: Deal): Deal {
 
 export function mergeRawDeal(previous: Deal | undefined, raw: RawDeal): RawDeal {
   if (!previous) return raw;
+  const previousKst = new Date(new Date(previous.publishedAt).getTime() + 9 * 60 * 60 * 1_000);
+  const rawKst = new Date(new Date(raw.publishedAt).getTime() + 9 * 60 * 60 * 1_000);
+  const sameKstDay = previousKst.getUTCFullYear() === rawKst.getUTCFullYear()
+    && previousKst.getUTCMonth() === rawKst.getUTCMonth()
+    && previousKst.getUTCDate() === rawKst.getUTCDate();
+  const previousHasTime = previousKst.getUTCHours() !== 0
+    || previousKst.getUTCMinutes() !== 0
+    || previousKst.getUTCSeconds() !== 0
+    || previousKst.getUTCMilliseconds() !== 0;
+  const preservePrecisePublishedAt = raw.publishedAtPrecision === "day"
+    && previous.publishedAtPrecision !== "day"
+    && sameKstDay
+    && previousHasTime;
   return {
     ...raw,
+    publishedAt: preservePrecisePublishedAt ? previous.publishedAt : raw.publishedAt,
+    publishedAtPrecision: preservePrecisePublishedAt ? "minute" : raw.publishedAtPrecision,
     productUrl: raw.productUrl ?? previous.productUrl,
     affiliateUrl: raw.affiliateUrl ?? previous.affiliateUrl,
     imageUrl: raw.imageUrl ?? previous.imageUrl,

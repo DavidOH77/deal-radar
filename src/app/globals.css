@@ -315,7 +315,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .deal-card + .deal-card { border-top: 1px solid var(--border); }
 .deal-card:hover { background: var(--surface-hover); }
 .deal-card:hover .deal-copy h2 { color: var(--accent); }
-.deal-row-link { position: absolute; inset: 0; z-index: 1; }
+.deal-row-link {
+  position: absolute;
+  inset: 0 88px 0 0;
+  z-index: 1;
+}
 .deal-row-link:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; border-radius: var(--radius-surface); }
 .rank-number {
   align-self: start;
@@ -872,6 +876,7 @@ footer p { margin: 0; text-align: right; }
     row-gap: 3px;
   }
   .deal-ledger-row.is-unranked { grid-template-columns: 84px minmax(0, 1fr) 32px; }
+  .deal-row-link { right: 49px; }
   .rank-number { grid-column: 1; grid-row: 1 / 4; padding-top: 1px; font-size: 12px; }
   .deal-ledger-row.is-unranked .product-media { grid-column: 1; }
   .product-media {
