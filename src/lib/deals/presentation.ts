@@ -34,6 +34,7 @@ export const DISPLAY_CATEGORIES = [
 export type DisplayCategory = (typeof DISPLAY_CATEGORIES)[number];
 
 const SELLER_PREFIX = /^\s*\[([^\]]{1,24})\]\s*/;
+const SLASH_SELLER_PREFIX = /^\s*(쿠팡|11번가|지마켓|g마켓|옥션|ssg|롯데온|네이버(?:멤버십)?|알리(?:익스프레스)?|오늘의집)\s*\/\s*/i;
 const PRICE_SUFFIX = /\s*[([]\s*([^()[\]]*(?:원|무료|무배|배송)[^()[\]]*)\s*[)\]]\s*$/i;
 
 function formatShipping(raw: Pick<RawDeal, "freeShipping" | "shippingPrice">, suffix?: string): string | undefined {
@@ -49,15 +50,17 @@ function formatShipping(raw: Pick<RawDeal, "freeShipping" | "shippingPrice">, su
 function cleanProductTitle(value: string): string {
   return value
     .replace(/(\d+(?:\.\d+)?)\s*(ml|l|g|kg)\s*[x×]\s*(\d+)(?!\d)(?:\s*개)?(?![가-힣])/gi, "$1$2 $3개")
+    .replace(/(\d+(?:\.\d+)?\s*(?:ml|l|g|kg)\s+\d+\s*개)\s*,\s*\d+(?:\.\d+)?\s*(?:ml|l|g|kg)\s*,\s*\d+\s*개/gi, "$1")
     .replace(/\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[~–-]\s*\d+(?:,\d{3})*(?:\.\d+)?)?\s*(?:만\s*)?원(?![가-힣])/gi, " ")
     .replace(/(?:무료(?:배송)?|무배)/gi, " ")
+    .replace(/[([]\s*개당\s*[)\]]/gi, " ")
     .replace(/\s*(?:[-–·|/]\s*)?[₩￦]\s*\d{1,3}(?:,\d{3})+(?:\s*(?:무료배송|무배))?\s*$/i, "")
     .replace(/\s*(?:[-–·|/]\s*)?(?:\d{1,3}(?:,\d{3})+|\d{4,})\s*원(?:\s*(?:무료배송|무배))?\s*$/i, "")
     .replace(/\(\s*이상[^)]*\)/gi, " ")
     .replace(/\(\s*[/|·-]*\s*\)|\[\s*[/|·-]*\s*\]/g, " ")
     .replace(/\s*[([]\s*\.{2,}\s*$/g, "")
     .replace(/\s+/g, " ")
-    .replace(/[·,\-\s]+$/, "")
+    .replace(/[·,/\-\s]+$/, "")
     .trim();
 }
 
@@ -69,8 +72,8 @@ export function displayCategory(raw: Pick<RawDeal, "title" | "category">): Displ
   if (/노트북|스마트폰|ssd|모니터|키보드|마우스|이어폰|헤드폰|태블릿|충전기|그래픽카드|메모리|공유기|스피커/.test(title)) return "디지털";
   if (/냉장고|세탁기|건조기|에어컨|청소기|다리미|공기청정기|제습기|식기세척기|전자레인지|헤어드라이어|드라이기|고데기/.test(title)) return "가전";
   if (/(?<!추)가구|침대|매트리스|토퍼|소파|책상|의자|식탁|서랍장|행거|인테리어/.test(title)) return "홈/가구";
-  if (/생수|음료|주스|쥬스|사이다|콜라(?!보)|두유|커피|김치|고기|삼겹|오징어|라면|사발면|과자|쿠키|초코|시리얼|쌀|과일|사과|복숭아|포도|샤인머스켓|양파|감자|순대|피자|빵|치즈|버터|올리브유|막걸리|무알콜|주류|마카롱|떡볶이|떡국|찹쌀떡|인절미|송편|백설기|전복|꽃게|아이스크림|계란|구운란|견과|마카다미아|해장국|곰탕|국밥|찌개|전골|짜장|짬뽕|국수|우동|파스타|스파게티|파스타소스|냉면|칼국수|비타민|영양제|프로틴|단백질|홍삼/.test(title)) return "식품";
-  if (/의류|잡화|신발|운동화|러닝화|티셔츠|셔츠|블라우스|팬츠|바지|슬랙스|청바지|데님|자켓|재킷|니트|가디건|원피스|스커트|코트|후드|맨투맨|점퍼|패딩|바람막이|반팔|긴팔|드로즈|브라|양말|가방|모자|샌들|로퍼|부츠|키링/.test(title)) return "패션";
+  if (/생수|음료|주스|쥬스|스파클링\s*워터|탄산수|사이다|콜라(?!보)|두유|커피|김치|고기|삼겹|오징어|라면|사발면|과자|쿠키|초코|시리얼|쌀|과일|사과|복숭아|포도|샤인머스켓|양파|감자|순대|피자|빵|치즈|버터|올리브유|막걸리|무알콜|주류|마카롱|떡볶이|떡국|찹쌀떡|인절미|송편|백설기|전복|꽃게|아이스크림|계란|구운란|견과|마카다미아|해장국|곰탕|국밥|찌개|전골|짜장|짬뽕|국수|우동|파스타|스파게티|파스타소스|냉면|칼국수|비타민|영양제|프로틴|단백질|홍삼/.test(title)) return "식품";
+  if (/의류|잡화|신발|운동화|러닝화|티셔츠|셔츠|블라우스|팬츠|바지|슬랙스|청바지|데님|자켓|재킷|니트|가디건|원피스|스커트|코트|후드|후디|맨투맨|점퍼|패딩|경량다운|다운재킷|바람막이|반팔|긴팔|드로즈|브라|양말|가방|모자|샌들|로퍼|부츠|키링/.test(title)) return "패션";
   if (/미용티슈|각티슈|두루마리|화장지|휴지|키친타월|세탁세제|주방세제|섬유유연제/.test(title)) return "생활";
   if (/화장품|스킨케어|토너|에센스|세럼|앰플|로션|선크림|선스틱|아이크림|수분크림|재생크림|마데카크림|크림|향수|립밤|립스틱|립글로스|립펜슬|틴트|쿠션|파운데이션|마스카라|아이섀도|아이브로우|아이라이너|컨실러|블러셔|파우더|픽서|메이크업|클렌징|클렌저|마스크팩|네일|샴푸|린스|트리트먼트|헤어팩|헤어토닉|헤어오일|두피|바디\s*(?:로션|워시|미스트)|괄사|속눈썹|화장솜|아토팜|클리오|마녀공장|네이처리퍼블릭|세타필|수려한/.test(title)) return "뷰티";
   if (/육아|유아|아동|기저귀|분유|키즈|유모차|카시트/.test(title)) return "육아";
@@ -99,7 +102,7 @@ export interface DealPresentation {
 }
 
 export function presentDeal(deal: Pick<Deal, "title" | "category" | "source" | "freeShipping" | "shippingPrice">): DealPresentation {
-  const sellerMatch = deal.title.match(SELLER_PREFIX);
+  const sellerMatch = deal.title.match(SELLER_PREFIX) ?? deal.title.match(SLASH_SELLER_PREFIX);
   const seller = sellerMatch?.[1].trim();
   let title = sellerMatch ? deal.title.slice(sellerMatch[0].length) : deal.title;
   const suffixMatch = title.match(PRICE_SUFFIX);

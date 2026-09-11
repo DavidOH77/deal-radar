@@ -32,6 +32,16 @@ describe("deal presentation", () => {
     });
   });
 
+  it("separates a known seller written as a slash prefix", () => {
+    expect(presentDeal(deal({
+      source: "eomisae",
+      title: "쿠팡/닛신 돈베이 키츠네 우동 12개/18920원"
+    }))).toMatchObject({
+      seller: "쿠팡",
+      title: "닛신 돈베이 키츠네 우동 12개"
+    });
+  });
+
   it("uses product categories instead of community-specific categories", () => {
     expect(displayCategory({ title: "나이키 러닝화", category: "패션국내" })).toBe("패션");
     expect(displayCategory({ title: "욕실 세제", category: "기타국내" })).toBe("생활");
@@ -93,11 +103,20 @@ describe("deal presentation", () => {
   it("normalizes multiplier quantities without duplicating Korean units", () => {
     expect(presentDeal(deal({ title: "현미밥 195gx24개" })).title).toBe("현미밥 195g 24개");
     expect(presentDeal(deal({ title: "탄산수 190mlx30캔" })).title).toBe("탄산수 190mlx30캔");
+    expect(presentDeal(deal({ title: "닛신 우동 96gx12개, 96g, 12개" })).title).toBe("닛신 우동 96g 12개");
+  });
+
+  it("normalizes product categories found in the live ranking", () => {
+    expect(displayCategory({ title: "잠바 스파클링 워터 레몬 만다린 40개", category: "기타" })).toBe("식품");
+    expect(displayCategory({ title: "라코스테 경량다운 추천상품", category: "기타" })).toBe("패션");
+    expect(displayCategory({ title: "아크테릭스 세륨후디", category: "기타" })).toBe("패션");
   });
 
   it("removes a trailing won price from the displayed product name", () => {
     expect(presentDeal(deal({ title: "뿌리는 락스세제 500ml 4개 9900원" })).title)
       .toBe("뿌리는 락스세제 500ml 4개");
+    expect(presentDeal(deal({ title: "[알리] (개당205원) 잠바 스파클링 워터 40개" })).title)
+      .toBe("잠바 스파클링 워터 40개");
   });
 
   it("removes a trailing won-symbol price and favors product nouns over a noisy category", () => {

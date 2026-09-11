@@ -84,6 +84,30 @@ describe("deal quality", () => {
     expect(dedupeDealsForDisplay([small, large])).toHaveLength(2);
   });
 
+  it("groups a concise pack title with a richer title that adds the unit size", () => {
+    const concise = deal("eomisae", {
+      source: "eomisae",
+      title: "쿠팡/닛신 돈베이 키츠네 우동 12개/18920원",
+      dealPrice: { amount: 18_920, currency: "KRW" },
+      reactions: { likes: 53, comments: 13, views: 5_389 }
+    });
+    const detailed = deal("fmkorea", {
+      source: "fmkorea",
+      title: "[쿠팡] 닛신 식품 돈베이 키츠네 우동 (동쪽) 96gx12개, 96g, 12개 (18,920원) (와우무배)",
+      dealPrice: { amount: 18_920, currency: "KRW" },
+      productUrl: "https://store.example/product",
+      reactions: { likes: 33, comments: 218, views: 84_356 }
+    });
+
+    expect(isLikelySameProduct(concise, detailed)).toBe(true);
+    expect(dedupeDealsForDisplay([concise, detailed])).toEqual([
+      expect.objectContaining({
+        id: "fmkorea",
+        reactions: { likes: 53, comments: 218, views: 84_356 }
+      })
+    ]);
+  });
+
   it("does not hide a named bundle behind the base product", () => {
     const consoleOnly = deal("console", { title: "닌텐도 스위치 2" });
     const gameBundle = deal("bundle", { title: "닌텐도 스위치2 + 포코피아" });

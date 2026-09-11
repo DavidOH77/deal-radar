@@ -61,12 +61,19 @@ function sameTokenSet(a: Set<string>, b: Set<string>): boolean {
   return a.size === b.size && [...a].every((token) => b.has(token));
 }
 
+function isTokenSubset(smaller: Set<string>, larger: Set<string>): boolean {
+  return [...smaller].every((token) => larger.has(token));
+}
+
 function sameProductIdentity(a: ProductIdentity, b: ProductIdentity): boolean {
   if (!a.key || !b.key) return false;
   if (a.key === b.key || sameTokenSet(a.tokens, b.tokens)) return true;
 
-  // Conflicting capacities, counts, or model numbers are different variants.
-  if (a.numericTokens.size && b.numericTokens.size && !sameTokenSet(a.numericTokens, b.numericTokens)) {
+  // Conflicting capacities, counts, or model numbers are different variants. A concise
+  // title may omit a unit size that a richer cross-source title includes for the same pack.
+  if (a.numericTokens.size && b.numericTokens.size
+    && !isTokenSubset(a.numericTokens, b.numericTokens)
+    && !isTokenSubset(b.numericTokens, a.numericTokens)) {
     return false;
   }
 
