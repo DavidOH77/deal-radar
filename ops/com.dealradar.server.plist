@@ -26,6 +26,8 @@
     <string>1</string>
     <key>USE_CLOUD_STORE</key>
     <string>1</string>
+    <key>DEAL_STORE_BACKEND</key>
+    <string>vercel_blob</string>
     <key>NODE_DISABLE_COMPILE_CACHE</key>
     <string>1</string>
   </dict>
