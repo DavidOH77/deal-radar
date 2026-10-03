@@ -35,6 +35,8 @@ const DEFAULT_CRAWL_LEASE_TTL_MS = 8 * 60 * 1000;
 let mutationQueue: Promise<unknown> = Promise.resolve();
 let redisClient: Redis | undefined;
 
+type StorageBackend = "upstash_redis" | "vercel_blob" | "local_file" | "misconfigured";
+
 interface StoreSnapshot {
   store: CrawlStore;
   etag?: string;
@@ -57,7 +59,10 @@ function redis(): Redis {
   return redisClient;
 }
 
-export function storageBackend(): "upstash_redis" | "vercel_blob" | "local_file" | "misconfigured" {
+export function storageBackend(): StorageBackend {
+  const preferred = process.env.DEAL_STORE_BACKEND?.trim();
+  if (preferred === "vercel_blob") return usesBlobStore() ? "vercel_blob" : "misconfigured";
+  if (preferred === "upstash_redis") return usesRedisStore() ? "upstash_redis" : "misconfigured";
   if (usesRedisStore()) return "upstash_redis";
   if (usesBlobStore()) return "vercel_blob";
   if (process.env.VERCEL) return "misconfigured";
@@ -96,11 +101,12 @@ export function isDisplayableDeal(
 }
 
 async function readUnsafe(): Promise<StoreSnapshot> {
-  if (usesRedisStore()) {
+  const backend = storageBackend();
+  if (backend === "upstash_redis") {
     return { store: parseRedisStore(await redis().get(REDIS_STORE_KEY)) };
   }
 
-  if (usesBlobStore()) {
+  if (backend === "vercel_blob") {
     const result = await get(BLOB_STORE_PATH, { access: "private", useCache: false });
     if (!result) return { store: structuredClone(EMPTY_STORE) };
     if (result.statusCode !== 200) throw new Error("Unexpected Blob response while reading the crawl store.");
@@ -120,13 +126,14 @@ async function readUnsafe(): Promise<StoreSnapshot> {
 }
 
 async function writeUnsafe(store: CrawlStore, etag?: string): Promise<void> {
-  if (usesRedisStore()) {
+  const backend = storageBackend();
+  if (backend === "upstash_redis") {
     await redis().set(REDIS_STORE_KEY, store);
     return;
   }
 
   const contents = JSON.stringify(store, null, 2);
-  if (usesBlobStore()) {
+  if (backend === "vercel_blob") {
     await put(BLOB_STORE_PATH, contents, {
       access: "private",
       allowOverwrite: Boolean(etag),
@@ -173,7 +180,7 @@ async function withRedisMutex<T>(operation: () => Promise<T>): Promise<T> {
 
 function mutateStore<T>(mutator: (store: CrawlStore) => T | Promise<T>): Promise<T> {
   const mutation = mutationQueue.then(async () => {
-    if (usesRedisStore()) {
+    if (storageBackend() === "upstash_redis") {
       return withRedisMutex(async () => {
         const { store } = await readUnsafe();
         const result = await mutator(store);

@@ -13,6 +13,7 @@ import {
 const storageEnvironment = [
   "VERCEL",
   "USE_CLOUD_STORE",
+  "DEAL_STORE_BACKEND",
   "BLOB_READ_WRITE_TOKEN",
   "BLOB_STORE_ID",
   "UPSTASH_REDIS_REST_URL",
@@ -130,6 +131,27 @@ describe("mergeRawDeal", () => {
     delete process.env.KV_REST_API_TOKEN;
 
     expect(storageBackend()).toBe("vercel_blob");
+  });
+
+  it("lets operators choose Blob when Redis credentials are also configured", () => {
+    process.env.VERCEL = "1";
+    process.env.DEAL_STORE_BACKEND = "vercel_blob";
+    process.env.BLOB_READ_WRITE_TOKEN = "blob-enabled";
+    process.env.KV_REST_API_URL = "https://redis.example";
+    process.env.KV_REST_API_TOKEN = "redis-enabled";
+
+    expect(storageBackend()).toBe("vercel_blob");
+  });
+
+  it("reports a selected backend as misconfigured when its credentials are missing", () => {
+    process.env.VERCEL = "1";
+    process.env.DEAL_STORE_BACKEND = "vercel_blob";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.KV_REST_API_URL = "https://redis.example";
+    process.env.KV_REST_API_TOKEN = "redis-enabled";
+
+    expect(storageBackend()).toBe("misconfigured");
   });
 
   it("counts compacted and legacy clicks during migration", () => {
