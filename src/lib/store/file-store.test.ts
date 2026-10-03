@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { CrawlStore, Deal, RawDeal } from "@/lib/deals/types";
 import {
+  blobWriteEtag,
   clickCount,
   crawlRunStatus,
   isCrawlLeaseActive,
@@ -45,6 +46,11 @@ const raw: RawDeal = {
 };
 
 describe("mergeRawDeal", () => {
+  it("converts Blob read ETags into the strong value required by conditional writes", () => {
+    expect(blobWriteEtag('W/"c4a101a5-1"')).toBe('"c4a101a5-1"');
+    expect(blobWriteEtag('"c4a101a5-1"')).toBe('"c4a101a5-1"');
+  });
+
   it("keeps previously collected optional metadata when a later list response omits it", () => {
     const previous = {
       ...raw,

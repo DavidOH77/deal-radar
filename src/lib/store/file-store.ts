@@ -90,6 +90,10 @@ function parseRedisStore(value: unknown): CrawlStore {
   return structuredClone(EMPTY_STORE);
 }
 
+export function blobWriteEtag(etag: string): string {
+  return etag.replace(/^W\//, "");
+}
+
 export function isDisplayableDeal(
   deal: Pick<RawDeal, "title" | "sourceUrl" | "publishedAt" | "expiresAt">,
   now = Date.now()
@@ -111,7 +115,7 @@ async function readUnsafe(): Promise<StoreSnapshot> {
     if (!result) return { store: structuredClone(EMPTY_STORE) };
     if (result.statusCode !== 200) throw new Error("Unexpected Blob response while reading the crawl store.");
     const contents = await new Response(result.stream).text();
-    return { store: parseStore(contents), etag: result.blob.etag };
+    return { store: parseStore(contents), etag: blobWriteEtag(result.blob.etag) };
   }
 
   try {
@@ -196,7 +200,9 @@ function mutateStore<T>(mutator: (store: CrawlStore) => T | Promise<T>): Promise
         await writeUnsafe(store, etag);
         return result;
       } catch (error) {
-        if (error instanceof BlobPreconditionFailedError && attempt < 2) continue;
+        const etagMismatch = error instanceof BlobPreconditionFailedError
+          || (error instanceof Error && /Precondition failed: ETag mismatch/i.test(error.message));
+        if (etagMismatch && attempt < 2) continue;
         throw error;
       }
     }
