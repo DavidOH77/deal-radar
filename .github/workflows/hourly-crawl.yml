@@ -1,4 +1,4 @@
-name: Hourly production health check
+name: Hourly production crawl
 
 on:
   schedule:
@@ -6,17 +6,22 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hourly-production-health
+  group: hourly-production-crawl
   cancel-in-progress: false
 
 jobs:
-  health:
+  crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 7
     steps:
-      - name: Verify production backend
+      - name: Refresh DealRadar data
         env:
-          HEALTH_URL: ${{ secrets.HEALTH_URL }}
+          CRAWL_URL: https://deal-radar-lac.vercel.app/api/cron/crawl
+          CRON_SECRET: ${{ secrets.DEALRADAR_CRON_SECRET }}
         run: |
-          test -n "$HEALTH_URL"
-          curl --fail-with-body --retry 2 --retry-all-errors --max-time 30 "$HEALTH_URL"
+          test -n "$CRON_SECRET"
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 360 \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "$CRAWL_URL"
