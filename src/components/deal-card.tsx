@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import type { Deal } from "@/lib/deals/types";
 import { formatMetric, presentDeal, relativeTime, SOURCE_LABELS } from "@/lib/deals/presentation";
 import { dealOriginalPath } from "@/lib/deals/routing";
+import { DealImage } from "./deal-image";
 import { MaterialIcon } from "./material-icon";
 
 const COMMUNITY_LABELS = new Set([
@@ -32,14 +32,14 @@ function DealMedia({ deal, eager, title }: { deal: Deal; eager: boolean; title: 
   return (
     <div className="product-media">
       {deal.imageUrl ? (
-        <Image
+        <DealImage
           src={deal.imageUrl}
           alt={title}
-          fill
           sizes="(max-width: 620px) 84px, 76px"
           className="product-image"
           loading={eager ? "eager" : "lazy"}
           fetchPriority={eager ? "high" : "auto"}
+          fallbackSize={22}
         />
       ) : (
         <MaterialIcon name="image_not_supported" size={22} label="상품 이미지 없음" />

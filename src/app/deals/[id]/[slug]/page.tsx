@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { DealImage } from "@/components/deal-image";
 import { MaterialIcon } from "@/components/material-icon";
 import { PriceHistory } from "@/components/price-history";
 import { ShareButton } from "@/components/share-button";
@@ -77,7 +77,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
       <article className="deal-detail">
         <div className="detail-media">
           {deal.imageUrl ? (
-            <Image src={deal.imageUrl} alt={presented.title} fill priority sizes="(max-width: 700px) 100vw, 360px" />
+            <DealImage src={deal.imageUrl} alt={presented.title} priority sizes="(max-width: 700px) 100vw, 360px" fallbackSize={36} />
           ) : (
             <MaterialIcon name="image_not_supported" size={36} label="상품 이미지 없음" />
           )}
