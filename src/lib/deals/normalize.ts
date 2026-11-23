@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { RawDeal, SourceId } from "./types";
+import { fallbackDealImageUrl } from "./image-url";
 
 const PROMO_WORDS = /\b(핫딜|특가|최저가|단독|오늘만|무료배송|쿠폰|카드할인)\b/gi;
 const SPACE = /\s+/g;
@@ -110,8 +111,10 @@ export function normalizeRawDeal(raw: RawDeal): RawDeal {
   const parsedPrice = TITLE_DERIVED_PRICE_SOURCES.has(raw.source) && preferredTitlePrice
     ? preferredTitlePrice
     : raw.dealPrice?.amount ?? parsePriceFromTitle(raw.title);
+  const needsImageFallback = !raw.imageUrl || raw.imageUrl.toLowerCase().includes("/noimage/");
   return {
     ...raw,
+    imageUrl: needsImageFallback ? fallbackDealImageUrl(raw.source, raw.sourceDealId) : raw.imageUrl,
     title: raw.title.replace(SPACE, " ").trim(),
     category: inferCategory(raw),
     dealPrice: parsedPrice ? { amount: parsedPrice, currency: "KRW" } : undefined

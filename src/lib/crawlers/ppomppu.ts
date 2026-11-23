@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
+import { fallbackDealImageUrl } from "@/lib/deals/image-url";
 import type { RawDeal, SourceConnector } from "@/lib/deals/types";
 import { absoluteUrl, fetchWithPolicy, numberValue } from "./http";
 import { errorMessage, sourceResult } from "./result";
@@ -33,7 +34,10 @@ export function parsePpomppu(html: string, collectedAt = new Date().toISOString(
 
     const recommendation = row.find(".baseList-rec").first().text().match(/\d+/)?.[0];
     const dateText = row.find("td[title]").filter((_, cell) => /\d{2}\.\d{2}\.\d{2}/.test($(cell).attr("title") ?? "")).attr("title") ?? "";
-    const rawImage = row.find(".baseList-thumb img").first().attr("src");
+    const image = row.find(".baseList-thumb img").first();
+    const rawImage = image.attr("data-original") ?? image.attr("data-src") ?? image.attr("src");
+    const listedImageUrl = absoluteUrl(rawImage, SOURCE_URL);
+    const hasPlaceholderImage = listedImageUrl?.toLowerCase().includes("/noimage/") ?? false;
     const category = row.find(".baseList-small").first().text().replace(/[\[\]]/g, "").trim();
 
     deals.push({
@@ -42,7 +46,9 @@ export function parsePpomppu(html: string, collectedAt = new Date().toISOString(
       sourceDealId,
       title,
       sourceUrl: absoluteUrl(link, SOURCE_URL) ?? SOURCE_URL,
-      imageUrl: absoluteUrl(rawImage, SOURCE_URL),
+      imageUrl: listedImageUrl && !hasPlaceholderImage
+        ? listedImageUrl
+        : fallbackDealImageUrl("ppomppu", sourceDealId),
       category: category || undefined,
       publishedAt: parsePublishedAt(dateText, collectedAt),
       reactions: {
@@ -110,6 +116,7 @@ export function parsePpomppuRss(xml: string, collectedAt = new Date().toISOStrin
       sourceDealId,
       title,
       sourceUrl: sourceUrl.toString(),
+      imageUrl: fallbackDealImageUrl("ppomppu", sourceDealId),
       productUrl: merchantUrlFromDescription(item.find("description").first().text()),
       publishedAt: Number.isFinite(publishedAtValue)
         ? new Date(publishedAtValue).toISOString()
@@ -134,6 +141,7 @@ export function mergePpomppuFeeds(listDeals: RawDeal[], rssDeals: RawDeal[]): Ra
     rssById.delete(deal.sourceDealId);
     return {
       ...deal,
+      imageUrl: deal.imageUrl ?? rssDeal.imageUrl,
       productUrl: deal.productUrl ?? rssDeal.productUrl,
       reactions: {
         likes: deal.reactions.likes ?? rssDeal.reactions.likes,

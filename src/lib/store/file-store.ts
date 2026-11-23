@@ -304,7 +304,9 @@ function hydrate(raw: RawDeal, snapshots: PriceSnapshot[], trend?: Deal["trend"]
 
 export function repairStoredDealPrice(deal: Deal): Deal {
   const normalized = normalizeRawDeal(deal);
-  if (normalized.dealPrice?.amount === deal.dealPrice?.amount) return deal;
+  if (normalized.dealPrice?.amount === deal.dealPrice?.amount) {
+    return normalized.imageUrl === deal.imageUrl ? deal : { ...deal, imageUrl: normalized.imageUrl };
+  }
 
   const baseline: Deal["baseline"] = {
     kind: "unknown",
